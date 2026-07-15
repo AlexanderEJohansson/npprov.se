@@ -1,0 +1,396 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { createSupabaseServerClient } from '../lib/supabase';
+import StructuredData from '../components/StructuredData.astro';
+import DataStatus from '../components/DataStatus.astro';
+import FragaCountBadge from '../components/FragaCountBadge.astro';
+import { formatProvTitel, formatProvTyp } from '../lib/format-titel';
+import {
+  getFragaCountsByProvId,
+  getFragaCount,
+  getFacitCountsByProvId,
+  getFacitCount,
+  sortByFragaCount,
+} from '../lib/fraga-counts';
+
+const supabase = createSupabaseServerClient();
+let items: any[] = [];
+let fragaCounts: Record<string, number> = {};
+let facitCounts: Record<string, number> = {};
+try {
+  const [{ data }, counts, facit] = await Promise.all([
+    supabase.from('prov').select('*').order('ar', { ascending: false }),
+    getFragaCountsByProvId(supabase),
+    getFacitCountsByProvId(supabase),
+  ]);
+  items = data || [];
+  fragaCounts = counts;
+  facitCounts = facit;
+} catch (_) {
+  items = [];
+}
+
+const medFraga = sortByFragaCount(
+  items.filter((item) => getFragaCount(item, fragaCounts) > 0),
+  fragaCounts
+);
+
+const medFacit = sortByFragaCount(
+  items.filter((item) => getFacitCount(item, facitCounts) > 0),
+  fragaCounts
+);
+
+// Enkel gruppering per ämne – prov med frågor först inom varje ämne
+const bySubject = items.reduce((acc: any, item: any) => {
+  const subj = item.amne || 'Okänt';
+  if (!acc[subj]) acc[subj] = [];
+  acc[subj].push(item);
+  return acc;
+}, {});
+
+for (const subj of Object.keys(bySubject)) {
+  bySubject[subj] = sortByFragaCount(bySubject[subj], fragaCounts);
+}
+---
+
+<Layout
+  title="Alla prov och bedömningsmaterial"
+  description="Översikt över 100+ nationella prov och bedömningsmaterial från Skolverket, med filter, provenance och länkar till originalkällor."
+  canonical="https://npprov.se/prov"
+>
+  <main class="max-w-7xl mx-auto px-6 py-10">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <h1 class="text-4xl font-semibold tracking-tight">Alla prov och bedömningsmaterial</h1>
+        <p class="text-slate-600 mt-1">{items.length > 0 ? `Totalt ${items.length} poster (live från Supabase). Varje post har full provenance och länk till ursprungskälla.` : '100+ poster i arkivet – full lista vid build med databasnycklar.'}</p>
+      </div>
+      <a href="/" class="text-sm text-teal-700">← Tillbaka till startsidan</a>
+    </div>
+
+    <!-- Sök + filter – extremt användbart för lärare, elever och föräldrar -->
+    <div class="mb-8 space-y-3">
+      <div class="flex flex-wrap gap-3 items-center">
+        <input 
+          id="prov-search" 
+          type="text" 
+          placeholder="Sök i titel, ämne eller år..." 
+          class="flex-1 min-w-[240px] max-w-sm bg-white border border-slate-300 focus:border-teal-600 rounded-2xl px-4 h-11 text-sm outline-none"
+
+        />
+        <button 
+          onclick="clearProvFilters()" 
+          class="px-4 h-11 text-sm border border-slate-300 hover:bg-slate-100 rounded-2xl transition font-medium"
+        >
+          Rensa alla filter
+        </button>
+      </div>
+
+      <!-- Ämnesfilter chips (multi-select) -->
+      <div class="flex flex-wrap gap-2 items-center" id="subject-filters">
+        {medFacit.length > 0 ? (
+          <button
+            type="button"
+            id="filter-med-fraga"
+            data-filter="med-fraga"
+            class="filter-chip px-3 py-1 text-xs font-medium border border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 rounded-2xl transition"
+          >
+            Med facit ({medFacit.length})
+          </button>
+        ) : medFraga.length > 0 ? (
+          <button
+            type="button"
+            id="filter-med-fraga"
+            data-filter="med-fraga"
+            class="filter-chip px-3 py-1 text-xs font-medium border border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 rounded-2xl transition"
+          >
+            Med frågor ({medFraga.length})
+          </button>
+        ) : null}
+      </div>
+      <div id="filter-status" class="text-xs text-slate-500"></div>
+    </div>
+
+    {medFraga.length > 0 && (
+      <section id="med-fraga" class="mb-12 p-6 bg-emerald-50 border border-emerald-200 rounded-3xl">
+        <h2 class="font-semibold text-xl text-emerald-950">Prov med per-fråga-data</h2>
+        <p class="text-sm text-emerald-900/80 mt-1 max-w-2xl">
+          Börja här om du vill öva direkt – {medFraga.length} prov har strukturerad frågedata{medFacit.length > 0 ? `, varav ${medFacit.length} med facit` : ''}.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+          {medFraga.map((item: any) => (
+            <a
+              href={`/prov/${item.slug || item.id}`}
+              class="card group bg-white border border-emerald-200 rounded-3xl p-5 block hover:border-emerald-400 transition-colors"
+              data-has-fraga="true"
+              data-has-facit={getFacitCount(item, facitCounts) > 0 ? 'true' : 'false'}
+              data-fraga-count={getFragaCount(item, fragaCounts)}
+            >
+              <div class="flex items-center gap-2 text-xs">
+                <span class="badge bg-teal-100 text-teal-800">{item.amne || 'Okänt'}</span>
+                <span class="text-slate-400">•</span>
+                <span class="text-slate-500">{item.ar || ''} {item.termin || ''}</span>
+              </div>
+              <div class="mt-3 font-semibold leading-snug line-clamp-2 group-hover:text-teal-800">
+                {formatProvTitel(item)}
+              </div>
+              <div class="mt-3">
+                <FragaCountBadge count={getFragaCount(item, fragaCounts)} size="md" />
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {Object.keys(bySubject).sort().map((subject: string) => (
+      <section class="mb-10">
+        <h2 class="font-semibold text-xl mb-3 flex items-center gap-3">
+          {subject}
+          <span class="text-sm font-normal text-slate-400">({bySubject[subject].length})</span>
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {bySubject[subject].map((item: any) => {
+            const fragaCount = getFragaCount(item, fragaCounts);
+            return (
+            <a
+              href={`/prov/${item.slug || item.id}`}
+              class={`card group bg-white rounded-3xl p-5 block transition-colors ${fragaCount > 0 ? 'border-2 border-emerald-100 hover:border-emerald-300' : 'border border-slate-200 hover:border-teal-300'}`}
+              data-has-fraga={fragaCount > 0 ? 'true' : 'false'}
+              data-has-facit={getFacitCount(item, facitCounts) > 0 ? 'true' : 'false'}
+              data-fraga-count={fragaCount}
+            >
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="badge bg-teal-100 text-teal-800">{subject}</span>
+                <span class="text-slate-400">•</span>
+                <span class="text-slate-500">{item.ar || ''} {item.termin || ''}</span>
+                {item.typ && <span class="text-slate-400">• {formatProvTyp(item.typ)}</span>}
+                {fragaCount > 0 && <FragaCountBadge count={fragaCount} />}
+              </div>
+              <div class="mt-3 font-semibold leading-snug line-clamp-3 group-hover:text-teal-800">
+                {formatProvTitel(item)}
+              </div>
+              <div class="mt-4 text-xs text-slate-500 flex items-center gap-1">
+                <span class="provenance inline">Källa: {item.kalla || 'Skolverket'}</span>
+              </div>
+              <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                <a 
+                  href={item.kalla_url} 
+                  target="_blank" 
+                  class="text-teal-700 hover:underline font-medium"
+                  onclick="event.stopImmediatePropagation()"
+                >
+                  Ladda ner från källa →
+                </a>
+                {item.metadata?.original_filename && (
+                  <a 
+                    href={`/prov/${encodeURIComponent(item.metadata.original_filename)}`} 
+                    target="_blank"
+                    rel="noopener"
+                    class="text-emerald-700 hover:underline"
+                    onclick="event.stopImmediatePropagation()"
+                  >
+                    Lokal PDF (arkiverad)
+                  </a>
+                )}
+              </div>
+            </a>
+          );
+          })}
+        </div>
+      </section>
+    ))}
+  </main>
+
+  <script>
+    let activeSubjects = new Set();
+    let onlyMedFraga = false;
+
+    function getSubjectsFromDOM() {
+      const subjects = [];
+      document.querySelectorAll('main section').forEach(section => {
+        const h2 = section.querySelector('h2');
+        if (h2) {
+          const match = h2.textContent.match(/^(.+?)\s*\((\d+)\)/);
+          if (match) {
+            subjects.push({ name: match[1].trim(), count: parseInt(match[2], 10), section });
+          }
+        }
+      });
+      return subjects;
+    }
+
+    function initSubjectChips() {
+      const container = document.getElementById('subject-filters');
+      if (!container) return;
+
+      const subjects = getSubjectsFromDOM();
+
+      subjects.forEach(({ name, count }) => {
+        const btn = document.createElement('button');
+        btn.textContent = `${name} (${count})`;
+        btn.className = 'filter-chip px-3 py-1 text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 rounded-2xl transition';
+        btn.dataset.subject = name;
+
+        btn.addEventListener('click', () => {
+          if (activeSubjects.has(name)) {
+            activeSubjects.delete(name);
+            btn.classList.remove('bg-teal-800', 'text-white', 'border-teal-800');
+            btn.classList.add('bg-white', 'border-slate-200');
+          } else {
+            activeSubjects.add(name);
+            btn.classList.add('bg-teal-800', 'text-white', 'border-teal-800');
+            btn.classList.remove('bg-white', 'border-slate-200');
+          }
+          applyFilters();
+        });
+
+        container.appendChild(btn);
+      });
+    }
+
+    function applyFilters() {
+      const searchInput = document.getElementById('prov-search');
+      const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      const sections = document.querySelectorAll('main section');
+      let totalVisible = 0;
+      const totalCards = document.querySelectorAll('.card').length;
+
+      sections.forEach(section => {
+        const h2 = section.querySelector('h2');
+        const subjMatch = h2?.textContent.match(/^(.+?)\s*\((\d+)\)/);
+        const subj = subjMatch ? subjMatch[1].trim() : '';
+        const isFeaturedSection = section.id === 'med-fraga';
+        const cards = section.querySelectorAll('.card');
+        let visibleInSection = 0;
+
+        cards.forEach(card => {
+          const text = card.textContent.toLowerCase();
+          const matchesSearch = !q || text.includes(q);
+          const matchesSubject = isFeaturedSection || activeSubjects.size === 0 || activeSubjects.has(subj);
+          const hasFraga = card.dataset.hasFraga === 'true';
+          const hasFacit = card.dataset.hasFacit === 'true';
+          const facitMode = document.getElementById('filter-med-fraga')?.textContent?.includes('facit');
+          const matchesFraga = !onlyMedFraga || (facitMode ? hasFacit : hasFraga);
+
+          if (matchesSearch && matchesSubject && matchesFraga) {
+            card.style.display = '';
+            visibleInSection++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        const showSection = isFeaturedSection || activeSubjects.size === 0 || activeSubjects.has(subj);
+        section.style.display = (visibleInSection > 0 && showSection) ? '' : 'none';
+        totalVisible += visibleInSection;
+      });
+
+      const status = document.getElementById('filter-status');
+      if (status) {
+        status.textContent = `${totalVisible} av ${totalCards} poster visas`;
+      }
+    }
+
+    function clearProvFilters() {
+      activeSubjects.clear();
+      onlyMedFraga = false;
+      const input = document.getElementById('prov-search');
+      if (input) input.value = '';
+
+      document.querySelectorAll('#subject-filters button').forEach(btn => {
+        if (btn.dataset.filter === 'med-fraga') {
+          btn.classList.remove('bg-emerald-800', 'text-white', 'border-emerald-800');
+          btn.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-900');
+        } else {
+          btn.classList.remove('bg-teal-800', 'text-white', 'border-teal-800');
+          btn.classList.add('bg-white', 'border-slate-200');
+        }
+      });
+
+      applyFilters();
+    }
+
+    function initProvFilters() {
+      initSubjectChips();
+
+      const medFragaBtn = document.getElementById('filter-med-fraga');
+      if (medFragaBtn) {
+        medFragaBtn.addEventListener('click', () => {
+          onlyMedFraga = !onlyMedFraga;
+          if (onlyMedFraga) {
+            medFragaBtn.classList.add('bg-emerald-800', 'text-white', 'border-emerald-800');
+            medFragaBtn.classList.remove('bg-emerald-50', 'border-emerald-300', 'text-emerald-900');
+          } else {
+            medFragaBtn.classList.remove('bg-emerald-800', 'text-white', 'border-emerald-800');
+            medFragaBtn.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-900');
+          }
+          applyFilters();
+        });
+      }
+
+      applyFilters();
+
+      const searchInput = document.getElementById('prov-search');
+      if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+      }
+
+      // Keyboard: / to focus search, Esc to clear
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+          e.preventDefault();
+          const input = document.getElementById('prov-search');
+          if (input) input.focus();
+        }
+        if (e.key === 'Escape') {
+          const input = document.getElementById('prov-search');
+          if (input && document.activeElement === input) {
+            input.value = '';
+            applyFilters();
+          } else {
+            clearProvFilters();
+          }
+        }
+      });
+
+      // Initial status
+      const status = document.getElementById('filter-status');
+      if (status) {
+        const total = document.querySelectorAll('.card').length;
+        status.textContent = `${total} av ${total} poster visas`;
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initProvFilters);
+    } else {
+      initProvFilters();
+    }
+  </script>
+<StructuredData 
+  type="CollectionPage" 
+  data={{
+    name: "Alla prov och bedömningsmaterial",
+    url: "https://npprov.se/prov",
+    description: "Översikt över 100+ offentliga nationella prov med full provenance, metadata och länkar till per-fråga-analys.",
+    count: items.length || 109
+  }} 
+/>
+
+<StructuredData 
+  type="ItemList" 
+  data={{
+    name: "Nationella prov per ämne",
+    items: Object.keys(bySubject).map((subj, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "item": { "@type": "CreativeWork", "name": subj, "url": "https://npprov.se/prov#" + subj }
+    }))
+  }} 
+/>
+
+<div class="max-w-7xl mx-auto px-6 mt-8">
+  <DataStatus variant="prov-list" count={items.length || undefined} />
+</div>
+</Layout>

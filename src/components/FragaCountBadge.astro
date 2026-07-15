@@ -1,0 +1,24 @@
+---
+interface Props {
+  count: number;
+  size?: 'sm' | 'md';
+}
+
+const { count, size = 'sm' } = Astro.props;
+
+if (count <= 0) return null;
+
+const sizeClass = size === 'md'
+  ? 'px-3 py-1 text-sm'
+  : 'px-2.5 py-0.5 text-xs';
+---
+
+<span
+  class={`inline-flex items-center gap-1 font-medium rounded-full bg-emerald-100 text-emerald-800 ${sizeClass}`}
+  title={`${count} strukturerade frågor med text och facit`}
+>
+  <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+  </svg>
+  {count} {count === 1 ? 'fråga' : 'frågor'} med facit
+</span>

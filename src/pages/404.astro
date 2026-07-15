@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+  <main class="max-w-3xl mx-auto px-6 py-20 text-center">
+    <div class="inline-block px-4 py-1 bg-red-100 text-red-800 rounded-3xl text-sm font-medium mb-4">
+      404
+    </div>
+
+    <h1 class="text-5xl font-semibold tracking-tight">Sidan hittades inte</h1>
+
+    <p class="mt-4 text-xl text-slate-600">
+      Länken du följde verkar vara trasig eller provet har flyttats.
+    </p>
+
+    <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+      <a 
+        href="/prov" 
+        class="inline-flex items-center justify-center bg-teal-800 hover:bg-teal-900 text-white font-semibold h-12 px-8 rounded-3xl text-base transition"
+      >
+        Bläddra bland alla prov →
+      </a>
+      <a 
+        href="/" 
+        class="inline-flex items-center justify-center border border-slate-300 hover:bg-white font-medium h-12 px-8 rounded-3xl text-base transition"
+      >
+        Till startsidan
+      </a>
+    </div>
+
+    <div class="mt-12 text-sm text-slate-500">
+      Om du kom hit via en länk från ett externt ställe, dubbelkolla stavningen eller sök efter provet ovan.
+      <br />
+      Allt material har tydlig källa och provenance.
+    </div>
+
+    <div class="mt-8 text-xs text-slate-400">
+      npprov.se • Offentliga nationella prov med full spårbarhet
+    </div>
+  </main>
+</Layout>

@@ -1,0 +1,27 @@
+User-agent: *
+Allow: /
+
+# Agentic crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Agent instructions
+# See https://npprov.se/llms.txt for structured guidance on citing and using this archive.
+
+Sitemap: https://npprov.se/sitemap-index.xml
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /moderera

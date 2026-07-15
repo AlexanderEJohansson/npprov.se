@@ -1,0 +1,27 @@
+---
+interface Props {
+  variant: 'home' | 'prov-list' | 'prov-detail' | 'fraga' | 'genome' | 'trender' | 'bidra';
+  count?: number;
+  granularCount?: number;
+}
+
+const { variant, count, granularCount } = Astro.props;
+
+const messages: Record<string, string> = {
+  home: 'Granulär per-fråga-data och kunskapsmålskopplingar finns för ett begränsat antal bedömningsunderlag. Bidrag sparas som pending och granskas innan publicering.',
+  'prov-list': count
+    ? `${count} poster med metadata och källlänk. Prov med grön badge har frågetext och facit – börja i sektionen "Prov med per-fråga-data" högst upp.`
+    : '100+ poster med metadata. Prov med grön badge har frågetext och facit.',
+  'prov-detail': granularCount && granularCount > 0
+    ? `${granularCount} uppgifter med text och analys på denna sida. Fler prov får granular data löpande från offentliga källor.`
+    : 'Denna post har metadata och källlänk. Granulär per-fråga-data (text, svar, missförstånd) finns inte ännu för detta prov.',
+  fraga: 'Kanonisk per-fråga-sida. Full struktur finns bara för seedade bedömningsunderlag – fler läggs till löpande.',
+  genome: 'Kunskapsmål finns i databasen. Kopplingar till specifika frågor är begränsade och växer via bidrag och seedning.',
+  trender: 'Live-rader från trend_analys visas högst upp när de finns. Illustrationstabellen nedan är inte live data.',
+  bidra: 'Bidrag sparas som pending och blir publika efter granskning via /moderera.',
+};
+---
+
+<aside class="text-xs text-slate-500 border-l-2 border-slate-200 pl-3" aria-label="Datastatus">
+  <strong>Datastatus:</strong> {messages[variant]}
+</aside>

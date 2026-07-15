@@ -1,0 +1,99 @@
+---
+import Provenance from './Provenance.astro';
+
+interface Props {
+  fraga: any;
+  dp: any;
+  provSlug: string;
+}
+
+const { fraga: f, dp, provSlug } = Astro.props;
+---
+
+<article id={`fraga-${f.id}`} class="scroll-mt-24 bg-white border border-slate-200 rounded-3xl p-6 hover:border-teal-200 transition-colors">
+  <header class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3">
+    <a href={`/prov/${provSlug}/fraga/${f.id}`} class="font-semibold text-lg tracking-tight text-teal-950 hover:underline">Fråga {f.fraga_nummer}</a>
+    <span class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600">{f.typ}</span>
+    {f.max_poang && <span class="text-xs text-slate-500">• {f.max_poang} poäng</span>}
+  </header>
+
+  <div class="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-800">
+    {f.text}
+  </div>
+
+  {f.korrekt_svar && (!f.svarsalternativ_json || !f.svarsalternativ_json.length) && (
+    <div class="mt-5 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-900">
+      <span class="font-semibold text-emerald-800">Facit: </span>{f.korrekt_svar}
+    </div>
+  )}
+
+  {f.svarsalternativ_json && Array.isArray(f.svarsalternativ_json) && f.svarsalternativ_json.length > 0 && (
+    <div class="mt-5">
+      <div class="text-xs font-semibold text-slate-600 mb-2">Svarsalternativ</div>
+      <div class="grid gap-2">
+        {f.svarsalternativ_json.map((alt: any, idx: number) => (
+          <div key={idx} class={`flex gap-3 rounded-2xl border px-4 py-2 text-sm ${f.korrekt_svar === alt.id ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-white'}`}>
+            <span class="font-mono text-xs text-slate-400 w-4">{alt.id}.</span>
+            <span>{alt.text}</span>
+            {f.korrekt_svar === alt.id && <span class="ml-auto text-emerald-700 text-xs font-medium">✓ Korrekt</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  {f.vanliga_missforstand && (
+    <section class="mt-5 rounded-2xl bg-amber-50 border border-amber-200 p-4" data-agent-chunk="misconceptions">
+      <div class="text-xs font-semibold text-amber-800 mb-1.5">Vanliga missförstånd bland elever</div>
+      <p class="text-sm text-slate-700">{f.vanliga_missforstand}</p>
+    </section>
+  )}
+
+  {f.varfor_viktig && (
+    <section class="mt-4 rounded-2xl bg-teal-50 border border-teal-200 p-4" data-agent-chunk="pedagogical-importance">
+      <div class="text-xs font-semibold text-teal-800 mb-1.5">Varför denna uppgift är viktig</div>
+      <p class="text-sm text-slate-700">{f.varfor_viktig}</p>
+    </section>
+  )}
+
+  {f.historiska_varianter && Array.isArray(f.historiska_varianter) && f.historiska_varianter.length > 0 && (
+    <div class="mt-3 text-[10px] text-slate-600">
+      Historiska varianter: {f.historiska_varianter.length} st (se full sida för detaljer)
+    </div>
+  )}
+
+  <footer class="mt-5">
+    <Provenance kalla={f.kalla} kallaUrl={null} humanReviewed={f.human_reviewed} lastUpdated={f.last_updated} compact={true} />
+  </footer>
+
+  <a href={`/prov/${provSlug}/fraga/${f.id}`} class="mt-3 inline-block text-xs text-teal-700 hover:underline">Visa fullständig per-fråga-analys och schema →</a>
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Question",
+    "name": `Fråga ${f.fraga_nummer} – ${dp.beteckning}`,
+    "text": f.text,
+    "url": `https://npprov.se/prov/${provSlug}/fraga/${f.id}`,
+    "educationalAlignment": {
+      "@type": "AlignmentObject",
+      "alignmentType": "teaches",
+      "educationalFramework": "Lgr22 / Gy25",
+      "targetDescription": "Kunskapskrav enligt aktuell kursplan"
+    },
+    "about": {
+      "@type": "DefinedTerm",
+      "name": "Kunskapskrav Lgr22/Gy25",
+      "description": "Specifika krav från den gällande kursplanen som frågan testar."
+    },
+    "provider": {
+      "@type": "Organization",
+      "name": f.kalla || 'Skolverket'
+    },
+    "additionalProperty": [
+      { "@type": "PropertyValue", "name": "human_reviewed", "value": f.human_reviewed ? "true" : "false" },
+      { "@type": "PropertyValue", "name": "kalla", "value": f.kalla || 'Skolverket' },
+      ...(f.vanliga_missforstand ? [{ "@type": "PropertyValue", "name": "vanliga_missforstand", "value": f.vanliga_missforstand }] : []),
+      ...(f.varfor_viktig ? [{ "@type": "PropertyValue", "name": "varfor_viktig", "value": f.varfor_viktig }] : [])
+    ]
+  })} />
+</article>

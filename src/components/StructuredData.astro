@@ -1,0 +1,195 @@
+---
+interface Props {
+  type: 'WebSite' | 'CollectionPage' | 'LearningResource' | 'Report' | 'ItemList' | 'DefinedTerm' | 'DefinedTermSet' | 'Question' | 'Answer' | 'Organization' | 'BreadcrumbList' | 'WebPage' | 'AboutPage';
+  data?: any;
+  questions?: any[];
+}
+
+const { type, data = {}, questions = [] } = Astro.props;
+
+let jsonLd: any = {};
+
+if (type === 'WebSite') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "npprov.se",
+    "url": "https://npprov.se",
+    "description": "Arkiv för offentliga gamla nationella prov med provenance, koppling till Lgr22/Gy25 och per-fråga-analys.",
+    "inLanguage": "sv-SE",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://npprov.se/prov?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "npprov.se",
+      "url": "https://npprov.se"
+    }
+  };
+} else if (type === 'Organization') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": data.name || "npprov.se",
+    "url": data.url || "https://npprov.se",
+    "description": data.description,
+    "sameAs": data.sameAs || []
+  };
+} else if (type === 'AboutPage') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": data.name || "Om npprov.se",
+    "description": data.description,
+    "url": data.url || "https://npprov.se/om",
+    "inLanguage": "sv-SE",
+    "isPartOf": { "@type": "WebSite", "name": "npprov.se", "url": "https://npprov.se" }
+  };
+} else if (type === 'WebPage') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": data.name,
+    "description": data.description,
+    "url": data.url,
+    "inLanguage": "sv-SE",
+    "isPartOf": { "@type": "WebSite", "name": "npprov.se", "url": "https://npprov.se" },
+    ...(data.about ? { about: data.about } : {})
+  };
+} else if (type === 'BreadcrumbList') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": data.items || []
+  };
+} else if (type === 'CollectionPage' && data.url) {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": data.name || "Samling av nationella prov",
+    "description": data.description || "Översikt över offentliga nationella prov med full provenance.",
+    "url": data.url,
+    "inLanguage": "sv-SE",
+    "mainEntity": {
+      "@type": "ItemList",
+      "numberOfItems": data.count || 109
+    }
+  };
+} else if (type === 'LearningResource') {
+  const hasQuestions = questions.length > 0;
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LearningResource",
+    "name": data.name,
+    "description": data.description,
+    "educationalLevel": data.educationalLevel || "Grundskola",
+    "learningResourceType": "Prov / Bedömningsmaterial",
+    "provider": { "@type": "Organization", "name": data.provider || "Skolverket" },
+    "url": data.url,
+    "datePublished": data.datePublished,
+    "isAccessibleForFree": true,
+    "license": "https://www.skolverket.se/om-oss/om-webbplatsen/anvanda-innehall",
+    "hasPart": hasQuestions ? questions : {
+      "@type": "Question",
+      "name": "Exempel på uppgiftstyp i detta prov",
+      "educationalAlignment": {
+        "@type": "AlignmentObject",
+        "alignmentType": "teaches",
+        "educationalFramework": "Lgr22 / Gy25",
+        "targetDescription": "Kunskapskrav enligt aktuell kursplan"
+      }
+    },
+    "educationalAlignment": {
+      "@type": "AlignmentObject",
+      "alignmentType": "teaches",
+      "educationalFramework": "Lgr22 / Gy25",
+      "targetDescription": "Kunskapskrav enligt aktuell kursplan"
+    },
+    "about": {
+      "@type": "DefinedTerm",
+      "name": "Kunskapskrav Lgr22/Gy25",
+      "description": "Specifika krav från den gällande kursplanen som frågan testar."
+    },
+    ...(data.additionalProperty ? { additionalProperty: data.additionalProperty } : {})
+  };
+} else if (type === 'Report') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Report",
+    "name": data.name || "Trender & Prediktion",
+    "description": data.description,
+    "url": data.url,
+    "inLanguage": "sv-SE",
+    "author": { "@type": "Organization", "name": "npprov.se" },
+    "about": {
+      "@type": "DefinedTerm",
+      "name": "Nationella prov - trender och prediktioner",
+      "description": "Utveckling av provtyper, krav och svårighetsgrad över tid."
+    },
+    ...(data.dateModified ? { dateModified: data.dateModified } : {}),
+    ...(data.additionalProperty ? { additionalProperty: data.additionalProperty } : {})
+  };
+} else if (type === 'ItemList') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": data.name,
+    "itemListElement": data.items || []
+  };
+} else if (type === 'DefinedTerm') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "DefinedTerm",
+    "name": data.name,
+    "description": data.description,
+    ...(data.termCode ? { termCode: data.termCode } : {}),
+    ...(data.inDefinedTermSet ? { inDefinedTermSet: data.inDefinedTermSet } : {})
+  };
+} else if (type === 'DefinedTermSet') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "DefinedTermSet",
+    "name": data.name || "Lgr22 / Gy25 Kunskapskrav",
+    "description": data.description || "Kunskapskrav och förmågor från Läroplan för grundskolan 2022 och Gymnasieskolan 2025.",
+    "url": data.url || "https://npprov.se/genome",
+    "hasDefinedTerm": data.terms || []
+  };
+} else if (type === 'Answer') {
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Answer",
+    "text": data.text,
+    "url": data.url
+  };
+} else if (type === 'Question') {
+  const { name, text, url, educationalLevel, provider, about, educationalAlignment, acceptedAnswer, suggestedAnswer, isPartOf, datePublished, additionalProperty, license, learningResourceType, isAccessibleForFree, ...rest } = data;
+  jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Question",
+    "name": name,
+    "text": text,
+    "url": url,
+    "educationalLevel": educationalLevel,
+    "learningResourceType": learningResourceType || "AssessmentQuestion",
+    "isAccessibleForFree": isAccessibleForFree ?? true,
+    "license": license || "https://www.skolverket.se/om-oss/om-webbplatsen/anvanda-innehall",
+    "provider": provider || { "@type": "Organization", "name": "Skolverket" },
+    "about": about,
+    "educationalAlignment": educationalAlignment,
+    "acceptedAnswer": acceptedAnswer,
+    "suggestedAnswer": suggestedAnswer,
+    "isPartOf": isPartOf,
+    "datePublished": datePublished,
+    "additionalProperty": additionalProperty,
+    ...rest
+  };
+  // Remove undefined keys
+  Object.keys(jsonLd).forEach(k => jsonLd[k] === undefined && delete jsonLd[k]);
+}
+---
+
+{jsonLd && Object.keys(jsonLd).length > 1 && (
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+)}

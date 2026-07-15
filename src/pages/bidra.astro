@@ -1,0 +1,174 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import StructuredData from '../components/StructuredData.astro';
+import Provenance from '../components/Provenance.astro';
+import DataStatus from '../components/DataStatus.astro';
+import { createSupabaseServerClient } from '../lib/supabase';
+
+const reportData = {
+  name: "Bidra till npprov.se",
+  description: "Lärare och sakkunniga kan bidra med kopplingar till kunskapskrav (fraga_kunskapsmal), förklaringar av vanliga missförstånd (community_forklaring), historiska varianter och mer. Allt dokumenteras med full provenance.",
+  url: "https://npprov.se/bidra"
+};
+
+let submitSuccess = false;
+let submitError = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const fragaRef = (formData.get('fragaRef') || '').toString().trim();
+    const typ = (formData.get('typ') || 'Annan förbättring').toString().trim();
+    const text = (formData.get('text') || '').toString().trim();
+    const roll = (formData.get('roll') || 'Lärare / sakkunnig').toString().trim();
+
+    if (!text || text.length < 10) {
+      submitError = 'Texten är för kort. Beskriv ditt förslag tydligare.';
+    } else {
+      const supabase = createSupabaseServerClient();
+
+      let fragaId: string | null = null;
+      if (/^[0-9a-fA-F-]{36}$/.test(fragaRef)) {
+        fragaId = fragaRef;
+      } else if (fragaRef) {
+        const { data: matches } = await supabase
+          .from('fraga')
+          .select('id, delprov:delprov_id(prov:prov_id(slug))')
+          .limit(5);
+        if (matches && matches.length > 0) {
+          const lowerRef = fragaRef.toLowerCase();
+          const found = matches.find((f: any) => {
+            const slug = f.delprov?.prov?.slug || '';
+            return lowerRef.includes(slug) || lowerRef.includes(f.id);
+          });
+          if (found) fragaId = found.id;
+        }
+      }
+
+      const proposalText = `${typ}: ${text}\n\nReferens: ${fragaRef || 'allmän'}`;
+
+      const { error } = await supabase
+        .from('community_forklaring')
+        .insert({
+          fraga_id: fragaId,
+          text: proposalText,
+          forfattare: roll,
+          forfattare_roll: roll.includes('Lärare') ? 'lärare' : 'sakkunnig',
+          status: 'pending',
+        });
+
+      if (error) {
+        console.error('Contribution insert error (server):', error);
+        submitError = 'Kunde inte spara just nu. Försök igen eller maila.';
+      } else {
+        submitSuccess = true;
+        // optional: try the koppling logic here too, but skip for simplicity
+      }
+    }
+  } catch (e: any) {
+    console.error('Bidrag server error:', e);
+    submitError = 'Oväntat fel. ' + (e?.message || '');
+  }
+}
+---
+
+<Layout
+  title="Bidra"
+  description="Bidra med kunskapsmålskopplingar, förklaringar av vanliga missförstånd och förbättringar. Allt modereras med full provenance."
+  canonical="https://npprov.se/bidra"
+>
+  <main class="max-w-3xl mx-auto px-6 py-10">
+    <a href="/" class="text-sm text-teal-700">← Tillbaka till startsidan</a>
+
+    <h1 class="mt-6 text-4xl font-semibold tracking-tight">Bidra</h1>
+
+    <div class="mt-3 text-sm text-slate-600 max-w-2xl">
+      npprov.se bygger på offentliga källor och expertkunskap från lärare. 
+      Vi välkomnar bidrag som stärker provenance, kopplingar till Lgr22/Gy25 och pedagogisk analys.
+    </div>
+
+    <div class="mt-8">
+      <h2 class="font-semibold text-xl">Exempel på vad som saknas idag</h2>
+      <ul class="mt-3 text-sm text-slate-700 space-y-2 list-disc pl-5">
+        <li>Konkreta kopplingar från en specifik fråga till ett kunskapskrav (t.ex. MA9.1.1)</li>
+        <li>Elevernas vanliga missförstånd i en uppgift, beskrivna av lärare som rättat den</li>
+        <li>Hur en uppgift har sett ut i tidigare år (historiska varianter)</li>
+        <li>Varför just den här uppgiften är pedagogiskt viktig, bortom det uppenbara</li>
+      </ul>
+    </div>
+
+    <div class="mt-8 p-5 bg-white border border-slate-200 rounded-3xl">
+      <h3 class="font-semibold">Skicka bidrag</h3>
+      <p class="text-sm text-slate-600 mt-1">
+        Använd formuläret nedan eller e-posta. Alla bidrag granskas, dokumenteras med kalla, human_reviewed och last_updated. 
+        Godkända bidrag publiceras med full provenance.
+      </p>
+
+      {submitSuccess ? (
+        <div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-sm">
+          <p class="text-emerald-700">Tack! Ditt bidrag är registrerat som "pending" och kommer att granskas.</p>
+          <button type="button" onclick="location.reload()" class="mt-2 text-sm text-teal-700 underline">Skicka ett till</button>
+        </div>
+      ) : (
+        <form method="post" class="mt-4 space-y-3 text-sm">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Ämne / Fråga (t.ex. prov-slug + fraga-nummer eller fraga-id)</label>
+            <input name="fragaRef" type="text" class="w-full border border-slate-300 rounded-2xl px-3 h-9 text-sm" placeholder="t.ex. c93832c7f1 fraga 3 eller ma-ak9-2024 / fraga 1" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Typ av bidrag</label>
+            <select name="typ" class="w-full border border-slate-300 rounded-2xl px-3 h-9 text-sm">
+              <option>Koppling till kunskapsmål (fraga_kunskapsmal)</option>
+              <option>Förklaring / missförstånd (community_forklaring)</option>
+              <option>Trend-kommentar eller prediktion (trend_analys)</option>
+              <option>Historisk variant</option>
+              <option>Annan förbättring (varfor_viktig, tabell m.m.)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Ditt förslag / text</label>
+            <textarea name="text" class="w-full border border-slate-300 rounded-2xl p-3 text-sm" rows="4" placeholder="Kort, källhänvisad text..." required></textarea>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Din roll / källa (för provenance)</label>
+            <input name="roll" type="text" class="w-full border border-slate-300 rounded-2xl px-3 h-9 text-sm" placeholder="t.ex. Lärare åk 9" value="Lärare åk 9" />
+          </div>
+          <button type="submit" class="px-5 h-9 rounded-2xl bg-teal-800 text-white text-sm font-medium">Skicka bidrag</button>
+          {submitError && <p class="text-sm text-red-700 mt-1">{submitError}</p>}
+        </form>
+      )}
+
+      <p class="mt-3 text-[10px] text-slate-500">
+        Bidraget sparas som "pending" och granskas innan det publiceras. Moderatorer använder <a href="/moderera" class="underline">/moderera</a> (kräver secret).
+      </p>
+    </div>
+
+    <DataStatus variant="bidra" />
+
+    <Provenance kalla="Lärare och sakkunniga" showFull={false} />
+
+    <div class="mt-6">
+      <div class="text-xs font-medium text-slate-600 mb-1">Referensexempel från seedat bedömningsunderlag (Matematik 2024)</div>
+      <div class="border border-slate-200 rounded-3xl p-4 text-sm bg-white">
+        <div class="font-semibold text-base">Fråga 1 – Bedömningsunderlag B (Maskinerna är våra vänner, Matematik 2024)</div>
+        <div class="mt-2 text-xs text-amber-700">Vanliga missförstånd: Många elever väljer det alternativ som låter "negativt" utan att läsa hela kontexten i texten. Andra blandar ihop "frigöra tid" med "ta bort jobb".</div>
+        <div class="mt-2 text-xs text-teal-700">Varför uppgiften är viktig: Den tränar att läsa sakprosatext källkritiskt och koppla teknikutveckling till vardagliga konsekvenser – centralt i både matematik och samhällsfrågor enligt Lgr22.</div>
+        <div class="mt-3 text-[10px] text-slate-500">
+          Provenance: Skolverket (bedömningsunderlag) • human_reviewed: Ja • last_updated: 2026-06 • Ursprung: offentligt material
+        </div>
+        <div class="mt-2 text-[8px] text-teal-600">Koppling till MA9.1.1 (styrka 0.85) via fraga_kunskapsmal. Syns i /genome och på den dedikerade frågesidan med full Question-schema.</div>
+      </div>
+      <p class="mt-2 text-[10px] text-slate-500">Detta är ett verkligt exempel från ett seedat prov. Godkända bidrag uppdaterar den faktiska datan med full provenance.</p>
+    </div>
+
+    <a href="/genome" class="mt-6 inline-block text-sm text-teal-700 hover:underline">Se Question Genome →</a>
+  </main>
+
+<StructuredData type="Report" data={reportData} />
+<StructuredData type="ItemList" data={{ name: "Bidragstyper", items: [
+  { "@type": "ListItem", "position": 1, "item": { "@type": "DefinedTerm", "name": "Koppling till kunskapsmål", "description": "fraga_kunskapsmal" } },
+  { "@type": "ListItem", "position": 2, "item": { "@type": "DefinedTerm", "name": "Förklaring / missförstånd", "description": "community_forklaring" } }
+] }} />
+</Layout>

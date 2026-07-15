@@ -1,0 +1,392 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { createSupabaseServerClient } from '../lib/supabase';
+import StructuredData from '../components/StructuredData.astro';
+import DataStatus from '../components/DataStatus.astro';
+import { formatProvTitel } from '../lib/format-titel';
+import { npmonstretLabelForKod, npmonstretUrlForKod } from '../lib/npmonstret-links';
+
+const supabase = createSupabaseServerClient();
+let kunskapsmal: any[] = [];
+let linkedExamples: Record<string, any[]> = {};
+let totalJunctions = 0;
+
+try {
+  const { data: km } = await supabase
+    .from('kunskapsmal')
+    .select('*')
+    .order('kod')
+    .limit(60);
+  kunskapsmal = km || [];
+
+  // Rich join: get fraga + delprov + prov slug + id so we can build real /prov/slug/fraga/id links
+  const { data: junctions } = await supabase
+    .from('fraga_kunskapsmal')
+    .select(`
+      kunskapsmal_id,
+      styrka,
+      fraga:fraga_id(
+        id,
+        fraga_nummer,
+        text,
+        vanliga_missforstand,
+        kalla,
+        human_reviewed,
+        last_updated,
+        delprov:delprov_id(
+          beteckning,
+          prov:prov_id(id, slug, titel, amne, ar)
+        )
+      )
+    `)
+    .limit(50);
+
+  if (junctions) {
+    totalJunctions = junctions.length;
+    junctions.forEach((j: any) => {
+      if (j.kunskapsmal_id && j.fraga) {
+        if (!linkedExamples[j.kunskapsmal_id]) linkedExamples[j.kunskapsmal_id] = [];
+        linkedExamples[j.kunskapsmal_id].push({ ...j.fraga, styrka: j.styrka });
+      }
+    });
+  }
+} catch (_) {
+  kunskapsmal = [];
+  linkedExamples = {};
+  totalJunctions = 0;
+}
+
+// Top krav by heat for summary + ItemList schema
+const topKrav = [...kunskapsmal]
+  .map(km => ({ ...km, heat: (linkedExamples[km.id] || []).length }))
+  .sort((a, b) => b.heat - a.heat)
+  .slice(0, 5);
+
+const termSetData = {
+  name: "Lgr22 / Gy25 Kunskapskrav (NP Question Genome)",
+  description: "Kunskapskrav, förmågor och centralt innehåll från Läroplan för grundskolan 2022 och Läroplan för gymnasieskolan 2025. Varje krav är kopplat till konkreta frågor i offentliga nationella prov via fraga_kunskapsmal.",
+  url: "https://npprov.se/genome",
+  terms: kunskapsmal.slice(0, 8).map((km: any) => ({
+    "@type": "DefinedTerm",
+    "name": km.kod,
+    "description": km.beskrivning
+  }))
+};
+
+const topKravItemList = {
+  name: "Mest testade kunskapskrav (topp 5)",
+  items: topKrav.map((km, i) => ({
+    "@type": "ListItem",
+    "position": i + 1,
+    "item": {
+      "@type": "DefinedTerm",
+      "name": km.kod,
+      "description": km.beskrivning,
+      "url": "https://npprov.se/genome"
+    }
+  }))
+};
+
+// Simple per-subject heat for Genome (advancing heatmap)
+const heatBySubject: Record<string, number> = {};
+kunskapsmal.forEach((km: any) => {
+  const h = linkedExamples[km.id]?.length || 0;
+  const subj = km.amne || 'Okänt';
+  heatBySubject[subj] = (heatBySubject[subj] || 0) + h;
+});
+const subjectHeatList = Object.entries(heatBySubject)
+  .sort((a, b) => b[1] - a[1])
+  .map(([subj, h], i) => ({
+    "@type": "ListItem",
+    "position": i + 1,
+    "item": { "@type": "DefinedTerm", "name": subj, "description": `${h} kopplade fraga` }
+  }));
+---
+
+<Layout
+  title="Question Genome"
+  description="Kunskapsmål (Lgr22/Gy25) kopplade till nationella provfrågor. Heatmap och exempel med full provenance."
+  canonical="https://npprov.se/genome"
+>
+  <main class="max-w-4xl mx-auto px-6 py-10">
+    <a href="/" class="text-sm text-teal-700">← Tillbaka till startsidan</a>
+
+    <div class="mt-6">
+      <div class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 rounded-3xl text-xs font-medium mb-3">NP Question Genome Project</div>
+      
+      <h1 class="text-4xl font-semibold tracking-tight">Frågor kopplade till kunskapskrav</h1>
+      
+      <div class="mt-4 text-lg text-slate-600 max-w-3xl">
+        Varje fråga i ett nationellt prov kopplas till specifika kunskapskrav i Lgr22 (grundskolan) eller Gy25 (gymnasiet). 
+        Det ger lärare, elever och AI-agenter en exakt karta över vad som faktiskt testas.
+      </div>
+    </div>
+
+    <div class="mt-10 grid md:grid-cols-2 gap-6">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6">
+        <h3 class="font-semibold text-lg">Vad det ger i praktiken</h3>
+        <p class="mt-2 text-sm text-slate-600">
+          Lärare får en översikt över vilka kunskapskrav som faktiskt förekommer i proven. Elever får exempel på hur kraven prövas i konkreta uppgifter. De som bygger övningsmaterial eller forskar får data för att analysera mönster över tid.
+        </p>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-3xl p-6">
+        <h3 class="font-semibold text-lg">Hur kopplingarna görs</h3>
+        <p class="mt-2 text-sm text-slate-600">
+          Varje kunskapskrav (t.ex. MA9.1.1) är hämtat från den officiella kursplanen. Vi kopplar specifika frågor till kravet när det finns stöd i bedömningsunderlag eller när lärare/sakkunniga bidrar med motivering. Kopplingarna granskas innan de blir publika.
+        </p>
+        <p class="mt-2 text-xs text-emerald-700">Just nu finns ett litet antal riktiga kopplingar från de seedade bedömningsunderlagen 2024–2025. Fler läggs till löpande via bidrag.</p>
+      </div>
+    </div>
+
+    <div class="mt-10">
+      <div class="flex items-baseline justify-between mb-4">
+        <h2 class="font-semibold text-2xl tracking-tight">Kunskapskrav i arkivet (Lgr22 / Gy25)</h2>
+        <div class="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-medium">
+          {totalJunctions} riktiga kopplingar via fraga_kunskapsmal • live
+        </div>
+      </div>
+
+      <!-- Heat summary + filter (for teachers / agents / RAG) -->
+      <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        <div>
+          <span class="font-medium">Heat:</span> krav sorterade efter antal kopplade fraga (live från fraga_kunskapsmal).
+        </div>
+        <div class="text-emerald-700">Totalt {totalJunctions} kopplingar just nu.</div>
+      </div>
+
+      {topKrav.length > 0 && (
+        <div class="mb-6 p-4 border border-emerald-200 bg-emerald-50/40 rounded-3xl">
+          <div class="text-xs font-medium text-emerald-800 mb-2">Topp 5 mest testade krav just nu</div>
+          <ul class="text-sm space-y-1">
+            {topKrav.map((km: any) => (
+              <li>
+                <span class="font-mono text-emerald-700">{km.kod}</span> — {km.beskrivning.slice(0, 80)}{km.beskrivning.length > 80 ? '…' : ''} 
+                <span class="text-[10px] text-emerald-600">({km.heat} fraga)</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {Object.keys(heatBySubject).length > 0 && (
+        <div class="mb-6 p-4 border border-teal-200 bg-teal-50/40 rounded-3xl">
+          <div class="text-xs font-medium text-teal-800 mb-2">Heat per ämne (summa kopplade fraga)</div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+            {Object.entries(heatBySubject).sort((a,b)=>b[1]-a[1]).map(([subj, h]) => {
+              const maxH = Math.max(...Object.values(heatBySubject));
+              const pct = Math.round((h / maxH) * 100);
+              return (
+                <div key={subj} class="border border-teal-100 px-2 py-1 rounded">
+                  <div class="flex justify-between">
+                    <span>{subj}</span>
+                    <span class="font-mono text-teal-700">{h}</span>
+                  </div>
+                  <div class="mt-0.5 h-1 bg-teal-100 rounded">
+                    <div class="h-1 bg-teal-600 rounded" style={`width: ${pct}%`}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div class="mt-1 text-[10px] text-teal-600">Enkel heatmap – full visualisering + per-krav heatmaps under utveckling.</div>
+        </div>
+      )}
+
+      <div class="mb-4 space-y-3">
+        <div class="flex flex-wrap gap-2" id="genome-subject-filters" role="group" aria-label="Filtrera på ämne">
+          <button type="button" data-subject="" class="genome-subj-btn px-3 py-1 text-xs rounded-full border border-teal-300 bg-teal-50 text-teal-800 font-medium">Alla</button>
+          {Array.from(new Set(kunskapsmal.map((km: any) => km.amne).filter(Boolean))).sort().map((subj: string) => (
+            <button type="button" data-subject={subj} class="genome-subj-btn px-3 py-1 text-xs rounded-full border border-slate-200 bg-white text-slate-600 hover:border-teal-200">{subj}</button>
+          ))}
+        </div>
+        <input 
+          id="genome-search" 
+          type="text" 
+          placeholder="Filtrera på kod eller beskrivning (t.ex. MA eller argumentera)..." 
+          class="w-full max-w-md bg-white border border-slate-300 focus:border-teal-600 rounded-2xl px-4 h-10 text-sm outline-none"
+          oninput="filterGenome()"
+        />
+      </div>
+
+      {kunskapsmal.length > 0 ? (
+        <div id="genome-list" class="space-y-4">
+          {[...kunskapsmal]
+            .sort((a, b) => (linkedExamples[b.id] || []).length - (linkedExamples[a.id] || []).length)
+            .map((km: any) => {
+            const links = linkedExamples[km.id] || [];
+            const heat = links.length;
+            return (
+              <div class="border border-slate-200 rounded-3xl p-5" data-genome-amne={km.amne || ''}>
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-semibold text-base">{km.kod} — {km.kurs}</div>
+                    <div class="text-sm text-slate-700 mt-1.5">{km.beskrivning}</div>
+                    {km.lgr22_gy25_referens && (
+                      <div class="text-[10px] text-slate-500 mt-2">Källa: {km.lgr22_gy25_referens}</div>
+                    )}
+                    <a
+                      href={npmonstretUrlForKod(km.kod, km.amne)}
+                      target="_blank"
+                      rel="noopener"
+                      class="inline-block mt-2 text-[11px] text-teal-700 hover:underline"
+                    >
+                      {npmonstretLabelForKod(km.kod)} →
+                    </a>
+                  </div>
+                  <div class={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${heat > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                    {heat} fraga{heat === 1 ? '' : 'r'}
+                  </div>
+                  {heat > 0 && (
+                    <div class="mt-1 h-1.5 w-24 bg-slate-100 rounded">
+                      <div class="h-1.5 bg-emerald-600 rounded" style={`width: ${Math.min(heat * 8, 100)}%`}></div>
+                    </div>
+                  )}
+                </div>
+
+                {links.length > 0 ? (
+                  <div class="mt-4 pt-4 border-t border-slate-100">
+                    <div class="text-xs font-medium text-emerald-700 mb-1.5">Frågor som testar detta krav (verkliga exempel från databasen):</div>
+                    <ul class="text-sm text-slate-700 space-y-2">
+                      {links.slice(0, 5).map((fr: any, i: number) => {
+                        const provSlug = fr.delprov?.prov?.slug || fr.delprov?.prov?.id;
+                        const fragaHref = provSlug && fr.id ? `/prov/${provSlug}/fraga/${fr.id}` : null;
+                        return (
+                          <li key={i} class="pl-1 border-l-2 border-emerald-100 pl-2">
+                            {fragaHref ? (
+                              <a href={fragaHref} class="hover:underline text-teal-800 font-medium">
+                                Fråga {fr.fraga_nummer} ({fr.delprov?.beteckning}) — {formatProvTitel(fr.delprov?.prov || {})}
+                              </a>
+                            ) : (
+                              <span>Fråga {fr.fraga_nummer} ({fr.delprov?.beteckning}) — {formatProvTitel(fr.delprov?.prov || {})}</span>
+                            )}
+                            <div class="text-xs text-slate-600 mt-0.5">{fr.text?.slice(0, 80)}...</div>
+                            {fr.vanliga_missforstand && (
+                              <div class="text-xs text-amber-700 mt-0.5">Vanligt missförstånd: {fr.vanliga_missforstand.slice(0, 80)}...</div>
+                            )}
+                            <div class="text-[9px] text-slate-500 mt-0.5">
+                              Provenance: {fr.kalla || '—'} • {fr.human_reviewed ? 'granskad' : 'automatisk'} • {fr.last_updated ? new Date(fr.last_updated).toLocaleDateString('sv-SE') : ''}
+                            </div>
+                            {fr.styrka && (
+                              <div class="text-[10px] text-emerald-600 mt-0.5">Kopplingsstyrka: {fr.styrka}</div>
+                            )}
+                          </li>
+                        );
+                      })}
+                      {links.length > 3 && <li class="text-xs text-slate-500">+ {links.length - 3} till… (se fullständig på provsidan)</li>}
+                    </ul>
+                    <p class="mt-2 text-[10px] text-slate-500">
+                      Visar upp till 5 kopplade frågor. Klicka för kanonisk per-fråga-sida.
+                    </p>
+                  </div>
+                ) : (
+                  <div class="mt-3 text-[10px] text-slate-500">
+                    Inga kopplade frågor för detta krav ännu. Kopplingar läggs till löpande från offentliga bedömningsunderlag.
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+          Kunskapsmål-strukturen är på plats i databasen. Inga eller få kopplingar syns just nu (data hämtas live från Supabase). Första riktiga fraga_kunskapsmal-exempel finns för de seedade 2024–2025 bedömningsunderlagen.
+        </div>
+      )}
+    </div>
+
+    <script>
+      let activeSubject = '';
+      function filterGenome() {
+        const q = (document.getElementById('genome-search')?.value || '').toLowerCase().trim();
+        document.querySelectorAll('#genome-list > div').forEach((el) => {
+          const text = el.textContent.toLowerCase();
+          const amne = (el.getAttribute('data-genome-amne') || '').toLowerCase();
+          const matchQ = !q || text.includes(q);
+          const matchSubj = !activeSubject || amne === activeSubject.toLowerCase();
+          el.style.display = matchQ && matchSubj ? '' : 'none';
+        });
+      }
+      document.querySelectorAll('.genome-subj-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeSubject = btn.getAttribute('data-subject') || '';
+          document.querySelectorAll('.genome-subj-btn').forEach((b) => {
+            b.classList.remove('border-teal-300', 'bg-teal-50', 'text-teal-800', 'font-medium');
+            b.classList.add('border-slate-200', 'bg-white', 'text-slate-600');
+          });
+          btn.classList.add('border-teal-300', 'bg-teal-50', 'text-teal-800', 'font-medium');
+          btn.classList.remove('border-slate-200', 'bg-white', 'text-slate-600');
+          filterGenome();
+        });
+      });
+    </script>
+
+    <div class="mt-10 p-6 bg-white border border-slate-200 rounded-3xl">
+      <h3 class="font-semibold">Bidra med kopplingar och förklaringar</h3>
+      <p class="text-sm text-slate-600 mt-1">
+        Lärare och sakkunniga kan bidra med förslag på fraga ↔ kunskapsmål-kopplingar (fraga_kunskapsmal), 
+        texter till vanliga_missforstand eller varfor_viktig, historiska_varianter, eller community_forklaring. 
+        Alla bidrag dokumenteras med full provenance, kalla, human_reviewed och last_updated.
+      </p>
+      <p class="mt-2 text-xs text-slate-600">
+        Tabellerna community_forklaring, fraga_kunskapsmal och historiska_varianter (JSONB) är redo. Bidrag granskas och läggs in med tydlig källhänvisning.
+      </p>
+      <form id="genome-contribute" class="mt-3 text-xs">
+        <input name="fragaRef" type="text" class="border border-slate-300 rounded p-1 w-full text-xs" placeholder="Kunskapsmål-kod eller fraga-ref (t.ex. SV9.1.1 eller c93832c7f1 fraga 3)" />
+        <textarea name="text" class="mt-1 border border-slate-300 rounded p-1 w-full text-xs" rows="2" placeholder="Ditt förslag (t.ex. stark koppling till detta krav + motivering)"></textarea>
+        <button type="submit" class="mt-1 px-3 py-1 bg-teal-800 text-white rounded text-xs">Skicka bidrag</button>
+      </form>
+      <div id="genome-contribute-status" class="mt-1 text-[10px]"></div>
+      <p class="mt-1 text-[10px] text-slate-500">Skickas till community_forklaring (pending). <a href="/bidra" class="underline">Gå till /bidra →</a></p>
+
+      <script>
+        const gform = document.getElementById('genome-contribute');
+        const gstatus = document.getElementById('genome-contribute-status');
+        if (gform) {
+          gform.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            gstatus.textContent = 'Skickar...';
+            const fd = new FormData(gform);
+            const payload = {
+              fragaRef: fd.get('fragaRef'),
+              typ: 'Bidrag via genome',
+              text: fd.get('text'),
+              roll: 'Lärare / sakkunnig (genome)',
+            };
+            try {
+              const res = await fetch('/api/contribute', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              const json = await res.json();
+              gstatus.textContent = json.success ? (json.message || 'Tack! Pending.') : ('Fel: ' + (json.error || ''));
+              if (json.success) gform.reset();
+            } catch (err) {
+              gstatus.textContent = 'Fel vid skickande.';
+            }
+          });
+        }
+      </script>
+    </div>
+
+    <DataStatus variant="genome" />
+  </main>
+
+<StructuredData type="CollectionPage" data={{ name: "NP Question Genome", url: "https://npprov.se/genome", description: "Kunskapskrav från Lgr22/Gy25 med konkreta kopplingar till frågor i offentliga nationella prov." }} />
+<StructuredData type="DefinedTermSet" data={termSetData} />
+<StructuredData type="ItemList" data={topKravItemList} />
+<StructuredData type="ItemList" data={{ name: "Heat per ämne (Question Genome)", items: subjectHeatList }} />
+{Object.values(linkedExamples).flat().length > 0 && (
+  <StructuredData type="ItemList" data={{
+    name: "Länkade frågor (Question Genome)",
+    items: Object.values(linkedExamples).flat().slice(0, 5).map((fr: any, i: number) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "item": {
+        "@type": "Question",
+        "name": `Fråga ${fr.fraga_nummer}`,
+        "url": fr.delprov?.prov?.slug && fr.id
+          ? `https://npprov.se/prov/${fr.delprov.prov.slug}/fraga/${fr.id}`
+          : undefined
+      }
+    }))
+  }} />
+)}
+</Layout>

@@ -1,0 +1,64 @@
+---
+import {
+  showNpmonstret,
+  npguideUrl,
+  npguideLabel,
+  npmonstretLink,
+  type EcosystemLinkProps,
+} from '../lib/ecosystem-links';
+
+interface Props extends EcosystemLinkProps {
+  variant?: 'box' | 'inline';
+}
+
+const {
+  context,
+  amne = null,
+  arskurs = null,
+  hasGranularData = false,
+  hasKunskapsmal = false,
+  questionText = null,
+  kunskapsmalKoder = [],
+  variant = 'box',
+} = Astro.props;
+
+const props: EcosystemLinkProps = {
+  context,
+  amne,
+  arskurs,
+  hasGranularData,
+  hasKunskapsmal,
+  questionText,
+  kunskapsmalKoder,
+};
+
+const monstret = npmonstretLink(props);
+const guide = npguideUrl(props);
+
+if (!monstret && !guide) return null;
+
+const wrapperClass =
+  variant === 'box'
+    ? 'p-4 border border-slate-200 rounded-3xl bg-slate-50 text-sm space-y-1'
+    : 'text-sm text-slate-600 space-y-1';
+---
+
+<div class={wrapperClass} data-ecosystem-links={context}>
+  {monstret && (
+    <p>
+      <a href={monstret.url} target="_blank" rel="noopener" class="underline text-teal-800">
+        {monstret.label}
+      </a>
+      .
+    </p>
+  )}
+  {guide && (
+    <p class={variant === 'inline' ? 'text-slate-500 text-sm' : ''}>
+      {context === 'fraga' ? 'Regler om ' : ''}
+      <a href={guide} target="_blank" rel="noopener" class="underline text-teal-800">
+        {npguideLabel(guide)}
+      </a>
+      {context === 'prov' ? ' finns på NP-guide.' : ' — se NP-guide.'}
+    </p>
+  )}
+</div>

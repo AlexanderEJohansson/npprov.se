@@ -1,0 +1,77 @@
+---
+interface FragaItem {
+  id: string;
+  fraga_nummer: string;
+  typ?: string;
+}
+
+interface DelprovItem {
+  id: string;
+  beteckning: string;
+  titel?: string | null;
+}
+
+interface Props {
+  delprovList: DelprovItem[];
+  fragaByDelprov: Record<string, FragaItem[]>;
+  provSlug: string;
+}
+
+const { delprovList, fragaByDelprov, provSlug } = Astro.props;
+
+const allFragor = delprovList.flatMap((dp) =>
+  (fragaByDelprov[dp.id] || []).map((f) => ({ ...f, delprov: dp }))
+);
+
+if (allFragor.length === 0) return null;
+
+const total = allFragor.length;
+---
+
+<nav
+  class="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-3xl"
+  aria-label="Snabbnavigering till frågor"
+>
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+    <div>
+      <div class="font-semibold text-emerald-900">Gå direkt till en fråga</div>
+      <p class="text-sm text-emerald-800/80 mt-0.5">
+        {total} uppgifter med text och facit – klicka för att hoppa ner eller öppna full analys.
+      </p>
+    </div>
+    <a
+      href={`#fraga-${allFragor[0].id}`}
+      class="text-sm font-medium text-emerald-800 hover:underline whitespace-nowrap"
+    >
+      Hoppa till första →
+    </a>
+  </div>
+
+  {delprovList.map((dp) => {
+    const fs = fragaByDelprov[dp.id] || [];
+    if (fs.length === 0) return null;
+    return (
+      <div class="mb-3 last:mb-0">
+        <div class="text-xs font-medium text-emerald-800 mb-1.5">{dp.beteckning}{dp.titel ? ` · ${dp.titel}` : ''}</div>
+        <div class="flex flex-wrap gap-1.5">
+          {fs.map((f) => (
+            <a
+              href={`#fraga-${f.id}`}
+              class="inline-flex items-center justify-center min-w-[2.25rem] h-8 px-2 text-sm font-medium bg-white border border-emerald-300 text-emerald-900 rounded-xl hover:bg-emerald-100 hover:border-emerald-400 transition"
+              title={`Fråga ${f.fraga_nummer}${f.typ ? ` (${f.typ})` : ''}`}
+            >
+              {f.fraga_nummer}
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  })}
+
+  <div class="mt-3 pt-3 border-t border-emerald-200/80 flex flex-wrap gap-3 text-xs text-emerald-800">
+    <span>Klicka på numret för att hoppa till frågan på sidan.</span>
+    <a href={`/prov/${provSlug}/fraga/${allFragor[0].id}`} class="font-medium hover:underline">
+      Öppna första frågan på egen sida →
+    </a>
+  </div>
+</nav>

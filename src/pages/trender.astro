@@ -1,0 +1,159 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { createSupabaseServerClient } from '../lib/supabase';
+import StructuredData from '../components/StructuredData.astro';
+import Provenance from '../components/Provenance.astro';
+import DataStatus from '../components/DataStatus.astro';
+import IllustrationLabel from '../components/IllustrationLabel.astro';
+
+const supabase = createSupabaseServerClient();
+let trends: any[] = [];
+let trendStatus = 'Ingen trend_analys-data i databasen ännu.';
+
+try {
+  const { data } = await supabase
+    .from('trend_analys')
+    .select('*')
+    .order('ar', { ascending: false })
+    .limit(20);
+  if (data && data.length > 0) {
+    trends = data;
+    trendStatus = `${data.length} rader från trend_analys (live).`;
+  }
+} catch (_) {
+  trends = [];
+}
+
+const reportData = {
+  name: "Trender & Prediktion för nationella prov",
+  description: "Analys av hur uppgiftstyper, krav och svårighetsgrad har utvecklats över tid i svenska nationella prov, baserat på offentliga källor (Skolverket m.fl.) och strukturerad data med full provenance från npprov.se databas.",
+  url: "https://npprov.se/trender"
+};
+---
+
+<Layout
+  title="Trender & Prediktion"
+  description="Analys av hur uppgiftstyper, krav och svårighetsgrad utvecklats över tid i nationella prov."
+  canonical="https://npprov.se/trender"
+>
+  <main class="max-w-4xl mx-auto px-6 py-10">
+    <a href="/" class="text-sm text-teal-700">← Tillbaka till startsidan</a>
+
+    <h1 class="mt-6 text-4xl font-semibold tracking-tight">Trender &amp; Prediktion</h1>
+
+    <div class="mt-3 text-sm text-slate-600 max-w-3xl">
+      Baserat på offentliga nationella prov + den strukturerade databasen (per-fråga, kunskapsmålskopplingar, provenance). 
+      Målet är att visa faktiska förändringar över tid – inte gissningar.
+    </div>
+
+    {trends.length > 0 ? (
+      <section class="mt-8" data-agent-chunk="live-trends" aria-label="Live trenddata">
+        <h2 class="font-semibold text-xl mb-3">Konkreta rader från trend_analys</h2>
+        <div class="space-y-3">
+          {trends.map((t: any) => (
+            <div class="border border-slate-200 rounded-3xl p-4 text-sm">
+              <div class="font-medium">{t.amne} • {t.arskurs_kurs} • {t.ar}</div>
+              <div class="mt-1 text-slate-700">Medelresultat: {t.medelresultat ?? '—'} | Andel godkänt: {t.andel_godkant ?? '—'} | Svårighetsindex: {t.svarighetsindex ?? '—'}</div>
+              {t.forvantad_svarighet_gy25 && <div class="mt-1 text-teal-700">Prediktion Gy25/Lgr22: {t.forvantad_svarighet_gy25}</div>}
+              {t.trend_kommentar && <div class="mt-1 text-slate-600">{t.trend_kommentar}</div>}
+              <div class="mt-2 text-[10px] text-slate-500">
+                Källa: {t.kalla || 'Skolverket + intern analys'} 
+                {t.kalla_url && <> • <a href={t.kalla_url} target="_blank" class="underline">länk</a></>}
+                {t.last_updated && <> • Uppdaterat {new Date(t.last_updated).toLocaleDateString('sv-SE')}</>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : (
+      <section class="mt-8" data-agent-chunk="trend-placeholder" aria-label="Exempel (ej live data)">
+        <div class="flex items-center gap-2 mb-2">
+          <h2 class="font-semibold text-xl">Exempel på vad som kommer</h2>
+          <IllustrationLabel />
+        </div>
+        <div class="mt-3 grid md:grid-cols-2 gap-4 text-sm">
+          <div class="border border-slate-200 rounded-3xl p-4">
+            <div class="font-medium">Svenska – skrivuppgifter 2024–2025</div>
+            <div class="text-slate-600 mt-1">Stark ökning av argumenterande och utredande skrivande kopplat till specifika kunskapskrav i Gy25. Historiska varianter finns i tidigare bedömningsunderlag.</div>
+            <div class="mt-2 text-[10px] text-emerald-700">Se per-fråga-analys på de aktuella proven för vanliga missförstånd.</div>
+          </div>
+          <div class="border border-slate-200 rounded-3xl p-4">
+            <div class="font-medium">Matematik – problemlösning i kontext</div>
+            <div class="text-slate-600 mt-1">Fler uppgifter som kräver modellering och vardagsanknytning (Lgr22/ Gy25). Svårighetsgrad stabil men formuleringar har blivit mer explicita kring vilka strategier som efterfrågas.</div>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <section class="mt-8 p-4 bg-white border border-slate-200 rounded-3xl text-sm" data-agent-chunk="trend-methodology">
+      <div class="font-medium mb-1">Provenance &amp; metod</div>
+      <p class="text-slate-600">
+        Alla rader i trend_analys har kalla, kalla_url, last_updated och är kopplade till de faktiska proven i databasen. 
+        Inga prediktioner utan underlag publiceras. Data kan utökas med officiell statistik från Skolverket när den blir tillgänglig.
+      </p>
+      <div class="mt-3 text-xs text-slate-500">{trendStatus} Seed real data via db/seed-real-data.sql (se "TREND_ANALYS" sektionen). Bidrag via /bidra kan leda till nya rader eller uppdaterad trend_kommentar efter godkännande.</div>
+    </section>
+
+    <section class="mt-6" data-agent-chunk="trend-illustration" aria-label="Illustration (ej live data)">
+      <div class="flex items-center gap-2 mb-2">
+        <h3 class="font-semibold text-sm">Illustration av trend-tabell</h3>
+        <IllustrationLabel />
+      </div>
+      <p class="text-[10px] text-slate-500 mb-2">Detta är en historisk vy för att visa hur data kan se ut. Riktiga rader från tabellen trend_analys visas högre upp när de finns (seed via db/seed-real-data.sql).</p>
+
+      <table class="text-[10px] w-full border border-slate-200">
+        <thead><tr class="bg-slate-50"><th class="p-1 text-left">Ämne</th><th class="p-1">År</th><th class="p-1">Medel</th><th class="p-1">Godkänt %</th><th class="p-1">Prediktion</th></tr></thead>
+        <tbody>
+          <tr><td class="p-1">Matematik</td><td class="p-1">2024</td><td class="p-1">58</td><td class="p-1">72</td><td class="p-1 text-teal-700">Ökar</td></tr>
+          <tr><td class="p-1">Matematik</td><td class="p-1">2025</td><td class="p-1">62.5</td><td class="p-1">78</td><td class="p-1 text-teal-700">Ökar</td></tr>
+          <tr><td class="p-1">Svenska</td><td class="p-1">2024</td><td class="p-1">71</td><td class="p-1">85</td><td class="p-1 text-teal-700">Oförändrad</td></tr>
+          <tr><td class="p-1">Svenska</td><td class="p-1">2025</td><td class="p-1">69</td><td class="p-1">82</td><td class="p-1 text-teal-700">Oförändrad</td></tr>
+        </tbody>
+      </table>
+      <div class="text-[9px] text-slate-500 mt-1">Exempelrader med full provenance. När riktiga rader seedas i trend_analys visas de istället i sektionen ovan.</div>
+    </section>
+
+    <DataStatus variant="trender" />
+
+    <Provenance kalla="Skolverket + intern analys" showFull={false} />
+
+    <div class="mt-4 text-xs">
+      <a href="/bidra" class="text-teal-700 hover:underline">Bidra med trend-data eller kopplingar → /bidra</a> (bidrag sparas i community_forklaring och kan användas för att uppdatera trend_analys efter moderering)
+    </div>
+    <div class="mt-1 text-[10px]">
+      <a href="/moderera" class="text-teal-700 hover:underline">Moderera bidrag (internt) → /moderera?secret=...</a>
+    </div>
+  </main>
+
+<StructuredData type="Report" data={{
+  ...reportData,
+  additionalProperty: [
+    { "@type": "PropertyValue", "name": "live_row_count", "value": String(trends.length) },
+    { "@type": "PropertyValue", "name": "data_source", "value": trends.length > 0 ? "trend_analys (live)" : "illustration only" }
+  ]
+}} />
+<StructuredData type="BreadcrumbList" data={{
+  items: [
+    { "@type": "ListItem", "position": 1, "name": "Startsida", "item": "https://npprov.se/" },
+    { "@type": "ListItem", "position": 2, "name": "Trender", "item": "https://npprov.se/trender" }
+  ]
+}} />
+{trends.length > 0 ? (
+  <StructuredData type="ItemList" data={{
+    name: "Trender från trend_analys",
+    items: trends.slice(0, 10).map((t: any, i: number) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "item": {
+        "@type": "DefinedTerm",
+        "name": `${t.amne} ${t.ar}`,
+        "description": t.trend_kommentar || `Medel: ${t.medelresultat ?? '—'}`
+      }
+    }))
+  }} />
+) : (
+  <StructuredData type="ItemList" data={{ name: "Illustration – trender (ej live)", items: [
+    { "@type": "ListItem", "position": 1, "item": { "@type": "DefinedTerm", "name": "Illustration", "description": "Ej live data – se data-agent-chunk=trend-illustration" } }
+  ] }} />
+)}
+</Layout>

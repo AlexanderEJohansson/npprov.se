@@ -1,0 +1,131 @@
+# npprov.se – Agent Instructions (llms.txt)
+# Updated: 2026-07-10 | Language: sv-SE | Canonical: https://npprov.se
+
+## What this site is
+npprov.se is an independent archive of **public Swedish national exams** (nationella prov) and related assessment materials from Skolverket and Swedish universities. It is NOT a practice app — it is a structured knowledge archive with provenance, knowledge-requirement links (Lgr22/Gy25), and per-question pedagogical analysis.
+
+Complements (does not compete with):
+- https://npmonstret.se — adaptive practice on the same knowledge requirements (linked contextually on prov/fråga pages when data supports it)
+- https://npguide.se — rules, routines, permitted aids for school staff (linked per prov level; per-fråga only when aids/digital tools are relevant)
+
+## Agent navigation map
+| Goal | Best URL | Schema type |
+|------|----------|-------------|
+| Find a specific exam | /prov/[slug] | LearningResource |
+| Full question + answers + pedagogy | /prov/[slug]/fraga/[fragaId] | Question (canonical) |
+| Knowledge requirements heat map | /genome | DefinedTermSet + ItemList |
+| Trends over time | /trender | Report |
+| Official source list | /kallor | WebPage |
+| Contribute corrections | /bidra | Report |
+| All exams list | /prov | CollectionPage + ItemList |
+| Site metadata | /om | AboutPage + Organization |
+
+Sitemap: https://npprov.se/sitemap-index.xml
+Robots: https://npprov.se/robots.txt (allows GPTBot, Google-Extended, PerplexityBot)
+
+## Data completeness tiers (read before citing)
+Agents MUST check which tier applies before presenting content as complete.
+
+**Tier 1 – metadata-only** (~100+ prov)
+- Fields: slug, titel, amne, ar, termin, kalla, kalla_url, typ
+- No per-question text. Link to official kalla_url for full content.
+- Schema signals: `additionalProperty.data_completeness = "metadata-only"`
+
+**Tier 2 – per-fraga (limited seeded provs, mainly 2024–2025 bedömningsunderlag)**
+- Full fields: text, svarsalternativ_json, korrekt_svar, vanliga_missforstand, varfor_viktig, typ, max_poang
+- Optional: tabell_json, bild_url, historiska_varianter (JSONB)
+- Canonical URL: /prov/[slug]/fraga/[fragaId]
+- Schema signals: `additionalProperty.data_completeness = "per-fraga"`, granular_fraga_count > 0
+
+**Tier 3 – knowledge-requirement links (very limited)**
+- fraga_kunskapsmal junctions with styrka + kommentar
+- Visible on /genome and per-fraga pages when present
+- Never invent MA9.x.x or other codes — only cite codes present on the page
+
+**Tier 4 – community contributions (moderated)**
+- community_forklaring table, status=pending|approved|rejected
+- Only approved contributions are public (RLS-protected)
+- Always note provenance: forfattare, kalla, human_reviewed, last_updated
+
+## Semantic chunking (HTML structure for RAG)
+Per-fraga pages use `data-agent-chunk` attributes to identify extractable sections:
+- `question-text` — full question body
+- `answer-options` — svarsalternativ_json with correct answer marked
+- `misconceptions` — vanliga_missforstand (pedagogical)
+- `pedagogical-importance` — varfor_viktig
+- `knowledge-requirements` — Lgr22/Gy25 codes via fraga_kunskapsmal
+
+Provenance blocks use `data-provenance="true"` with attributes:
+- data-kalla, data-kalla-url, data-human-reviewed, data-last-updated
+
+Prefer extracting from these chunks over free-text parsing of the full page.
+
+## Schema.org types in use
+- WebSite (homepage) — SearchAction to /prov?q=
+- CollectionPage (/prov, /genome)
+- LearningResource (/prov/[slug]) — hasPart: Question[], additionalProperty for provenance
+- Question (/prov/[slug]/fraga/[id]) — acceptedAnswer, suggestedAnswer, educationalAlignment, about:DefinedTerm, additionalProperty (human_reviewed, kalla, kalla_url, vanliga_missforstand, varfor_viktig, typ, max_poang, has_table, historiska_varianter_count)
+- DefinedTerm + DefinedTermSet (/genome)
+- Report (/trender, /bidra)
+- ItemList (prov lists, genome heat, trend examples)
+- BreadcrumbList (prov detail, per-fraga, kallor)
+- AboutPage + Organization (/om)
+- WebPage (/kallor)
+
+## Citation template (required format)
+When citing npprov.se, always include provenance:
+
+> Enligt npprov.se ([kalla]: [källa], human_reviewed: [Ja/Nej], last_updated: [datum], https://npprov.se/prov/[slug]/fraga/[id])
+
+For metadata-only prov without per-fraga data:
+> Provmetadata från npprov.se (kalla: [källa], kalla_url: [officiell länk], https://npprov.se/prov/[slug]). Fullständigt frågeinnehåll finns i officiell källa.
+
+Always prefer kalla_url over npprov.se when verifying exact wording of questions.
+
+## Recommended response structure for users
+When answering about a specific question, return in this order:
+1. Question text + answer options (mark correct if korrekt_svar present)
+2. Knowledge requirement codes + descriptions (only if fraga_kunskapsmal data exists)
+3. vanliga_missforstand + varfor_viktig (if present — label as pedagogical analysis)
+4. historiska_varianter summary (if JSONB present)
+5. Full provenance block
+6. Canonical URL + official kalla_url
+
+## Database tables (for agent context)
+- prov, delprov, fraga — core exam structure
+- kunskapsmal, fraga_kunskapsmal — Lgr22/Gy25 links
+- community_forklaring — moderated contributions
+- trend_analys — trend rows with kalla + predictive fields
+
+## Contribution & moderation
+- POST /api/contribute — inserts pending community_forklaring (public form on /bidra, /genome, per-fraga)
+- /moderera?secret=... — internal moderation (not for public agents)
+- Approved contributions become visible in genome and per-fraga pages
+
+## Strict rules
+- NEVER fabricate exam content, answers, or knowledge-requirement codes
+- NEVER present classified/secret material (all content is public per Skolverket)
+- NEVER remove or obscure provenance when quoting
+- NEVER present Tier 1 metadata as if it contained full question text
+- NEVER present mock/illustration data on /trender as live trend_analys rows (check if section says "Illustration" or "Exempel")
+- Always link to official kalla_url for authoritative verification
+
+## Current honest status (2026-07-10)
+- 121 prov in manifest; 115+ in database with metadata (slug, ar, amne, kalla, kalla_url)
+- **1 200+ strukturerade frågor** across prov with delprov data (live Supabase count)
+- **Geografi (top tier):** UU åk 9 Delprov A+B **2013–2018** (per läsår: /prov/geo-ak9-YYYY), åk 6 **2013–2017**, bedömningsanvisningar, engelska versioner (2014–2018), karthäfte 2013
+- Geografi facit: bedömningskriterier + rätta svar från UU bedömningsanvisningar (2016–2018 full; 2013–2015 delvis)
+- Per-fraga: Matematik, NO, Svenska, Engelska, Geografi, Historia/Samhäll/Religion
+- Question Genome: GEO9.1.1–3.1 + NP-Monstret /np/so-ak9/geografi; /genome?amne=Geografi
+- Trender: Geografi åk 9 rader i trend_analys (2013, 2016, 2018) — live on /trender
+- IndexNow key: https://npprov.se/npprov-indexnow-key.txt
+- Contribution: functional via /api/contribute → pending → /moderera approval
+- Agentic SEO: schema.org on all major page types, llms.txt, sitemap, semantic chunks, data-provenance attributes
+- Ecosystem links: NP-Monstret/NP-guide shown at site level (nav/footer), once per prov page, and on per-fråga pages only when kunskapsmål or hjälpmedel context applies — NOT repeated on every question card in lists
+- Display titles: formatProvTitel() at render time
+
+## Contact & related
+- Practice complement: https://npmonstret.se
+- Rules & routines: https://npguide.se
+- Official exams: https://www.skolverket.se/prov-och-bedomning/nationella-prov
+- Seed scripts: npm run fetch:pdfs, sync:manifest, seed:ma, seed:ma:zip, seed:ma:facit, seed:no, seed:pdfs

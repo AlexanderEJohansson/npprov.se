@@ -1,23 +1,96 @@
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+---
+import '../styles/global.css';
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+
+const {
+  title,
+  description = 'Sveriges mest kompletta, strukturerade och pedagogiskt genomtänkta arkiv för gamla nationella prov. För lärare, elever, föräldrar och AI-agenter. Offentligt material från Skolverket och lärosäten.',
+  canonical = 'https://npprov.se/',
+} = Astro.props;
+
+const pageTitle = title
+  ? `${title} | npprov.se`
+  : 'npprov.se – Gamla nationella prov | Sveriges mest kompletta arkiv';
+---
+
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    
+    <!-- Agentic SEO / AEO 2026 -->
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="Instructions for AI agents (llms.txt)" />
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased">
+    <!-- Top bar / Navigation (professionell) -->
+    <header class="border-b border-slate-200 bg-white sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="flex h-16 items-center justify-between">
+          <a href="/" class="flex items-center gap-x-3">
+            <!-- Simple, sharp logo for npprov -->
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0">
+              <rect width="32" height="32" rx="8" fill="#134E4A"/>
+              <text 
+                x="16" 
+                y="21" 
+                text-anchor="middle" 
+                fill="white" 
+                font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+                font-size="17" 
+                font-weight="700" 
+                letter-spacing="-0.5">NP</text>
+            </svg>
+            <div>
+              <div class="font-semibold text-2xl tracking-[-0.5px] text-teal-900">npprov.se</div>
+              <div class="text-[10px] text-teal-700 -mt-1.5 font-medium">gamla nationella prov</div>
+            </div>
+          </a>
+
+          <nav class="flex items-center gap-x-8 text-sm font-medium">
+            <a href="/prov" class="text-slate-600 hover:text-teal-900 transition">Alla prov</a>
+            <a href="/kallor" class="text-slate-600 hover:text-teal-900 transition">Källor</a>
+            <a href="/genome" class="text-slate-600 hover:text-teal-900 transition">Question Genome</a>
+            <a href="/trender" class="text-slate-600 hover:text-teal-900 transition">Trender &amp; Prediktion</a>
+            <a href="/bidra" class="text-slate-600 hover:text-teal-900 transition">Bidra</a>
+            <a href="https://npmonstret.se" target="_blank" rel="noopener" 
+               class="text-slate-500 hover:text-teal-700 transition text-xs px-3 py-1 border border-slate-200 rounded-2xl hover:border-teal-200">
+              Öva adaptivt → NP-Monstret
+            </a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="border-t border-slate-200 bg-white mt-16 py-10 text-sm text-slate-500">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="flex flex-col md:flex-row justify-between gap-y-4">
+          <div>
+            <p>npprov.se är ett oberoende, ideellt projekt som samlar offentliga nationella prov och relaterat bedömningsmaterial från Skolverket och lärosäten.</p>
+            <p class="mt-1 text-xs">Allt material är offentligt, fritt från sekretess och alltid länkat till ursprungskällan. Vi bygger Sveriges mest strukturerade och tillförlitliga arkiv med full provenance. Data är live från Supabase • Källor alltid angivna med direkta länkar.</p>
+          </div>
+          <div class="text-xs">
+            <a href="/om" class="hover:text-teal-700">Om sajten</a> ·
+            <a href="https://npguide.se" target="_blank" rel="noopener" class="hover:text-teal-700">NP-guide (regler &amp; rutiner)</a> ·
+            <a href="https://www.skolverket.se/prov-och-bedomning/nationella-prov" target="_blank" rel="noopener" class="hover:text-teal-700">Skolverket</a> ·
+            <span class="text-slate-400">Provenance alltid angivet</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

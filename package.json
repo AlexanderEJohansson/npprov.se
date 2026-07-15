@@ -9,9 +9,49 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "supabase:login": "npx supabase login",
+    "supabase:link": "npx supabase link --project-ref alrxchmxuqaeonsvaogw",
+    "db:push": "npx supabase db push",
+    "db:types": "npx supabase gen types typescript --linked > src/lib/database.types.ts",
+    "seed": "npx tsx scripts/seed-from-manifest.ts",
+    "fix:data": "npx tsx scripts/fix-duplicate-fraga.ts",
+    "fix:titles": "npx tsx scripts/fix-prov-titles.ts",
+    "seed:pdfs": "npx tsx scripts/seed-from-pdfs.ts",
+    "fetch:pdfs": "npx tsx scripts/fetch-pdfs.ts",
+    "fetch:skolverket": "npx tsx scripts/fetch-skolverket.ts",
+    "seed:no": "npx tsx scripts/seed-no-pdfs.ts",
+    "seed:ma": "npx tsx scripts/seed-ma-pdfs.ts",
+    "seed:ma:zip": "npx tsx scripts/seed-ma-zip.ts",
+    "seed:ma:facit": "npx tsx scripts/seed-ma-facit.ts",
+    "sync:manifest": "npx tsx scripts/sync-manifest-metadata.ts",
+    "seed:so:zip": "npx tsx scripts/seed-so-zip.ts",
+    "seed:eng": "npx tsx scripts/seed-eng-pdfs.ts",
+    "seed:km:geo": "npx tsx scripts/seed-kunskapsmal-geo.ts",
+    "seed:geo": "npx tsx scripts/seed-geo-pdfs.ts",
+    "fix:geo": "npx tsx scripts/fix-geo-metadata.ts",
+    "split:geo": "npx tsx scripts/split-geo-by-year.ts",
+    "seed:geo:facit": "npx tsx scripts/seed-geo-facit.ts",
+    "seed:geo:ak6": "npx tsx scripts/seed-geo-ak6-pdfs.ts",
+    "seed:geo:trends": "npx tsx scripts/seed-geo-trends.ts",
+    "indexnow": "npx tsx scripts/indexnow-ping.ts",
+    "indexnow:geo": "npx tsx scripts/indexnow-ping.ts --geo-only",
+    "seed:zip:tex": "npx tsx scripts/seed-zip-tex.ts",
+    "seed:tier2": "npx tsx scripts/seed-tier2-pdf.ts",
+    "deploy": "npx vercel --prod",
+    "deploy:preview": "npx vercel"
   },
   "dependencies": {
-    "astro": "^6.4.4"
+    "@astrojs/sitemap": "^3.7.3",
+    "@astrojs/vercel": "^10.0.8",
+    "@supabase/supabase-js": "^2.107.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "astro": "^6.4.4",
+    "tailwindcss": "^4.3.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "pdf-parse": "^2.4.5",
+    "tsx": "^4.22.4"
   }
 }

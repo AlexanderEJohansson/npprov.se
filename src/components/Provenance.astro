@@ -1,0 +1,56 @@
+---
+interface Props {
+  kalla?: string;
+  kallaUrl?: string | null;
+  humanReviewed?: boolean;
+  lastUpdated?: string | null;
+  compact?: boolean;
+  showFull?: boolean;
+}
+
+const { kalla = 'Skolverket', kallaUrl, humanReviewed = false, lastUpdated, compact = false, showFull = true } = Astro.props;
+const isoDate = lastUpdated ? new Date(lastUpdated).toISOString().split('T')[0] : null;
+---
+
+{
+  compact ? (
+    <span
+      class="text-[11px] text-slate-500"
+      data-provenance="true"
+      data-kalla={kalla}
+      data-human-reviewed={humanReviewed ? 'true' : 'false'}
+      {...(isoDate ? { 'data-last-updated': isoDate } : {})}
+    >
+      <span class="font-medium">Provenance:</span> {kalla}
+      {humanReviewed ? ' • Lärargranskad' : ' • Automatiskt insamlad'}
+    </span>
+  ) : (
+    <aside
+      class="text-xs text-slate-500 border-l-2 border-slate-200 pl-3"
+      data-provenance="true"
+      data-kalla={kalla}
+      data-human-reviewed={humanReviewed ? 'true' : 'false'}
+      {...(isoDate ? { 'data-last-updated': isoDate } : {})}
+      {...(kallaUrl && kallaUrl !== '#' ? { 'data-kalla-url': kallaUrl } : {})}
+      aria-label="Provenance och källhänvisning"
+    >
+      <div>
+        <strong>Provenance:</strong> {kalla} • Offentligt nationellt prov
+        {humanReviewed ? ' • human_reviewed: Ja' : ' • human_reviewed: Nej (automatiskt insamlad från offentligt material)'}
+      </div>
+      {lastUpdated && (
+        <div>
+          Uppdaterat i arkivet: <time datetime={isoDate}>{new Date(lastUpdated).toLocaleDateString('sv-SE')}</time>
+        </div>
+      )}
+      {showFull && (
+        <div>Data live från Supabase • Oberoende, ideellt projekt • Officiell källa är alltid auktoritativ</div>
+      )}
+      {kallaUrl && kallaUrl !== '#' && (
+        <div class="mt-0.5">
+          <a href={kallaUrl} target="_blank" rel="noopener" class="underline hover:text-teal-700">Öppna officiell källa →</a>
+        </div>
+      )}
+    </aside>
+  )
+}

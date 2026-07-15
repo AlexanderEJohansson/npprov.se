@@ -1,0 +1,375 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import { createSupabaseServerClient } from '../../../../lib/supabase';
+import StructuredData from '../../../../components/StructuredData.astro';
+import Provenance from '../../../../components/Provenance.astro';
+import DataStatus from '../../../../components/DataStatus.astro';
+import EcosystemLinks from '../../../../components/EcosystemLinks.astro';
+import { formatProvTitel } from '../../../../lib/format-titel';
+
+export async function getStaticPaths() {
+  const paths: { params: { id: string; fragaId: string } }[] = [];
+  try {
+    const supabase = createSupabaseServerClient();
+    const pageSize = 1000;
+    let from = 0;
+
+    while (true) {
+      const { data, error } = await supabase
+        .from('fraga')
+        .select('id, delprov:delprov_id(prov:prov_id(slug))')
+        .range(from, from + pageSize - 1);
+
+      if (error || !data?.length) break;
+
+      for (const row of data) {
+        const provSlug = row.delprov?.prov?.slug || null;
+        if (provSlug && row.id) {
+          paths.push({ params: { id: provSlug, fragaId: row.id } });
+        }
+      }
+
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+  } catch (_) {
+    // No DB at build time → no dedicated fraga pages generated
+  }
+  return paths;
+}
+
+const supabase = createSupabaseServerClient();
+const provSlug = Astro.params.id as string;
+const fragaId = Astro.params.fragaId as string;
+
+let fraga: any = null;
+let delprov: any = null;
+let prov: any = null;
+let kunskapsmalList: any[] = [];
+
+try {
+  const { data: f } = await supabase
+    .from('fraga')
+    .select('*, delprov:delprov_id(*, prov:prov_id(*))')
+    .eq('id', fragaId)
+    .single();
+
+  if (f) {
+    fraga = f;
+    delprov = f.delprov;
+    prov = f.delprov?.prov;
+
+    // Load linked knowledge requirements (fraga_kunskapsmal + kunskapsmal)
+    const { data: junctions } = await supabase
+      .from('fraga_kunskapsmal')
+      .select('styrka, kommentar, kunskapsmal:kunskapsmal_id(*)')
+      .eq('fraga_id', fragaId);
+
+    if (junctions) {
+      kunskapsmalList = junctions.map((j: any) => ({
+        ...j.kunskapsmal,
+        styrka: j.styrka,
+        kommentar: j.kommentar
+      }));
+    }
+  }
+} catch (_) {
+  // graceful – page will show honest status
+}
+
+if (!fraga) {
+  fraga = { fraga_nummer: '?', text: 'Frågan kunde inte laddas.', typ: 'ovrigt' };
+  delprov = { beteckning: '' };
+  prov = { titel: 'Nationellt prov', amne: 'Okänt', ar: '', termin: '', kalla: 'Skolverket' };
+}
+
+const titel = formatProvTitel(prov || {});
+const amne = prov?.amne || 'Okänt ämne';
+const ar = prov?.ar || '';
+const termin = prov?.termin || '';
+const kalla = fraga.kalla || prov?.kalla || 'Skolverket';
+const kallaUrl = prov?.kalla_url || '#';
+const dpBet = delprov?.beteckning || '';
+
+// Build rich, standalone Question JSON-LD (top-level for this dedicated page)
+const aboutDefinedTerm = kunskapsmalList.length > 0
+  ? {
+      "@type": "DefinedTerm",
+      "name": kunskapsmalList.map(k => k.kod).join(', '),
+      "description": kunskapsmalList.map(k => k.beskrivning).join(' | '),
+      "inDefinedTermSet": {
+        "@type": "DefinedTermSet",
+        "name": "Lgr22 / Gy25 kunskapsmål",
+        "url": "https://npprov.se/genome"
+      }
+    }
+  : {
+      "@type": "DefinedTerm",
+      "name": "Kunskapskrav Lgr22/Gy25",
+      "description": "Specifika krav från den gällande kursplanen som frågan testar."
+    };
+
+const educationalAlignment = kunskapsmalList.length > 0
+  ? kunskapsmalList.map(km => ({
+      "@type": "AlignmentObject",
+      "alignmentType": "teaches",
+      "educationalFramework": "Lgr22 / Gy25",
+      "targetName": km.kod,
+      "targetDescription": km.beskrivning
+    }))
+  : {
+      "@type": "AlignmentObject",
+      "alignmentType": "teaches",
+      "educationalFramework": "Lgr22 / Gy25",
+      "targetDescription": "Kunskapskrav enligt aktuell kursplan"
+    };
+
+const acceptedAnswer = fraga.korrekt_svar
+  ? {
+      "@type": "Answer",
+      "text": `Korrekt svar: ${fraga.korrekt_svar}${fraga.max_poang ? ` (${fraga.max_poang} poäng)` : ''}`
+    }
+  : undefined;
+
+const suggestedAnswers = fraga.svarsalternativ_json && Array.isArray(fraga.svarsalternativ_json)
+  ? fraga.svarsalternativ_json.map((alt: any) => ({
+      "@type": "Answer",
+      "text": `${alt.id}. ${alt.text}`
+    }))
+  : undefined;
+
+const questionLd = {
+  "@context": "https://schema.org",
+  "@type": "Question",
+  "name": `Fråga ${fraga.fraga_nummer} – ${dpBet || titel}`,
+  "text": fraga.text,
+  "url": `https://npprov.se/prov/${provSlug}/fraga/${fragaId}`,
+  "educationalLevel": amne.includes('gymnasiet') || amne.includes('Gy') ? "Gymnasial utbildning" : "Grundskola",
+  "learningResourceType": "AssessmentQuestion",
+  "isAccessibleForFree": true,
+  "license": "https://www.skolverket.se/om-oss/om-webbplatsen/anvanda-innehall",
+  "provider": {
+    "@type": "Organization",
+    "name": kalla,
+    "url": kallaUrl !== '#' ? kallaUrl : undefined
+  },
+  "about": aboutDefinedTerm,
+  "educationalAlignment": educationalAlignment,
+  ...(acceptedAnswer ? { "acceptedAnswer": acceptedAnswer } : {}),
+  ...(suggestedAnswers ? { "suggestedAnswer": suggestedAnswers } : {}),
+  "isPartOf": {
+    "@type": "LearningResource",
+    "name": titel,
+    "url": `https://npprov.se/prov/${provSlug}`
+  },
+  "datePublished": ar ? `${ar}-01-01` : undefined,
+  "additionalProperty": [
+    { "@type": "PropertyValue", "name": "human_reviewed", "value": fraga.human_reviewed ? "true" : "false" },
+    { "@type": "PropertyValue", "name": "kalla", "value": kalla },
+    { "@type": "PropertyValue", "name": "kalla_url", "value": kallaUrl !== '#' ? kallaUrl : "" },
+    { "@type": "PropertyValue", "name": "last_updated", "value": fraga.last_updated || prov?.last_updated || "" },
+    { "@type": "PropertyValue", "name": "typ", "value": fraga.typ },
+    { "@type": "PropertyValue", "name": "max_poang", "value": fraga.max_poang || 1 },
+    ...(fraga.vanliga_missforstand ? [{ "@type": "PropertyValue", "name": "vanliga_missforstand", "value": fraga.vanliga_missforstand }] : []),
+    ...(fraga.varfor_viktig ? [{ "@type": "PropertyValue", "name": "varfor_viktig", "value": fraga.varfor_viktig }] : []),
+    ...(fraga.historiska_varianter ? [{ "@type": "PropertyValue", "name": "historiska_varianter_count", "value": String(fraga.historiska_varianter.length) }] : []),
+    ...(fraga.tabell_json ? [{ "@type": "PropertyValue", "name": "has_table", "value": "true" }] : [])
+  ]
+};
+
+// For the page we also render a DefinedTerm StructuredData block when real kunskapsmal exist
+---
+
+<Layout
+  title={`Fråga ${fraga.fraga_nummer} – ${titel}`}
+  description={`Per-fråga-analys för ${amne} ${ar}: frågetext, kunskapsmål, vanliga missförstånd och provenance från ${kalla}.`}
+  canonical={`https://npprov.se/prov/${provSlug}/fraga/${fragaId}`}
+>
+  <main class="max-w-3xl mx-auto px-6 py-10">
+    <a href={`/prov/${provSlug}`} class="text-sm text-teal-700 hover:underline">← Tillbaka till {titel}</a>
+
+    <div class="mt-4">
+      <div class="flex flex-wrap items-center gap-2 text-sm">
+        <span class="badge bg-teal-100 text-teal-800 font-medium">{amne}</span>
+        <span class="badge bg-slate-100 text-slate-700">{ar} {termin}</span>
+        {dpBet && <span class="badge bg-slate-100 text-slate-700">{dpBet}</span>}
+        <span class="badge bg-slate-100 text-slate-700">Fråga {fraga.fraga_nummer}</span>
+      </div>
+
+      <h1 class="text-3xl font-semibold tracking-tight mt-3 text-balance">
+        Fråga {fraga.fraga_nummer} – {dpBet || 'Uppgift'}
+      </h1>
+
+      <div class="mt-2 text-sm text-slate-600">
+        <span class="font-medium">Källa:</span> {kalla}
+        {kallaUrl && kallaUrl !== '#' && (
+          <> • <a href={kallaUrl} target="_blank" class="underline hover:text-teal-700">Öppna officiell källa</a></>
+        )}
+      </div>
+    </div>
+
+    <!-- Full provenance (first class, via reusable component) -->
+    <Provenance 
+      kalla={kalla} 
+      kallaUrl={kallaUrl} 
+      humanReviewed={fraga.human_reviewed} 
+      lastUpdated={fraga.last_updated || prov?.last_updated} 
+      showFull={true} 
+    />
+
+    <!-- Question body -->
+    <article class="mt-8 bg-white border border-slate-200 rounded-3xl p-6" itemscope itemtype="https://schema.org/Question">
+      <meta itemprop="name" content={`Fråga ${fraga.fraga_nummer} – ${dpBet || titel}`} />
+      <section data-agent-chunk="question-text" aria-label="Frågetext">
+      <div class="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-800" itemprop="text">
+        {fraga.text}
+      </div>
+      </section>
+
+      {fraga.bild_url && (
+        <div class="mt-4">
+          <img src={fraga.bild_url} alt={`Bild till fråga ${fraga.fraga_nummer}`} class="max-h-80 rounded-xl border" />
+        </div>
+      )}
+
+      {fraga.tabell_json && (
+        <div class="mt-4 p-3 border border-slate-200 rounded-2xl bg-white text-sm">
+          <div class="text-xs font-semibold text-slate-600 mb-2">Tabell</div>
+          <pre class="text-xs overflow-auto text-slate-700">{JSON.stringify(fraga.tabell_json, null, 2)}</pre>
+        </div>
+      )}
+
+      {fraga.svarsalternativ_json && Array.isArray(fraga.svarsalternativ_json) && fraga.svarsalternativ_json.length > 0 && (
+        <section class="mt-6" data-agent-chunk="answer-options" aria-label="Svarsalternativ">
+          <div class="text-xs font-semibold text-slate-600 mb-2">Svarsalternativ</div>
+          <div class="grid gap-2">
+            {fraga.svarsalternativ_json.map((alt: any, idx: number) => (
+              <div key={idx} class={`flex gap-3 rounded-2xl border px-4 py-2 text-sm ${fraga.korrekt_svar === alt.id ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-white'}`}>
+                <span class="font-mono text-xs text-slate-400 w-4">{alt.id}.</span>
+                <span>{alt.text}</span>
+                {fraga.korrekt_svar === alt.id && <span class="ml-auto text-emerald-700 text-xs font-medium">✓ Korrekt</span>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {fraga.vanliga_missforstand && (
+        <section class="mt-6 rounded-2xl bg-amber-50 border border-amber-200 p-4" data-agent-chunk="misconceptions" aria-label="Vanliga missförstånd">
+          <div class="text-xs font-semibold text-amber-800 mb-1.5">Vanliga missförstånd bland elever</div>
+          <p class="text-sm text-slate-700">{fraga.vanliga_missforstand}</p>
+        </section>
+      )}
+
+      {fraga.varfor_viktig && (
+        <section class="mt-4 rounded-2xl bg-teal-50 border border-teal-200 p-4" data-agent-chunk="pedagogical-importance" aria-label="Varför uppgiften är viktig">
+          <div class="text-xs font-semibold text-teal-800 mb-1.5">Varför denna uppgift är viktig</div>
+          <p class="text-sm text-slate-700">{fraga.varfor_viktig}</p>
+        </section>
+      )}
+
+      {fraga.historiska_varianter && Array.isArray(fraga.historiska_varianter) && fraga.historiska_varianter.length > 0 && (
+        <div class="mt-4 rounded-2xl bg-slate-50 border border-slate-200 p-4">
+          <div class="text-xs font-semibold text-slate-700 mb-1.5">Historiska varianter av liknande uppgift</div>
+          <ul class="text-sm text-slate-700 space-y-1">
+            {fraga.historiska_varianter.map((v: any, i: number) => (
+              <li key={i}>• {v.ar || 'Tidigare'} {v.beskrivning || v.text || JSON.stringify(v).slice(0,80)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <!-- Kunskapsmål / DefinedTerm links when present -->
+      {kunskapsmalList.length > 0 && (
+        <section class="mt-6" data-agent-chunk="knowledge-requirements" aria-label="Kunskapskrav">
+          <div class="text-xs font-semibold text-teal-800 mb-2">Kunskapskrav (Lgr22 / Gy25) som frågan testar</div>
+          <div class="space-y-2">
+            {kunskapsmalList.map((km: any) => (
+              <div class="text-sm border border-teal-100 bg-teal-50/40 rounded-2xl p-3">
+                <div class="font-mono text-xs text-teal-700">{km.kod}</div>
+                <div class="text-slate-700 mt-0.5">{km.beskrivning}</div>
+                {km.styrka && <div class="text-[10px] text-teal-600 mt-1">Styrka: {km.styrka}</div>}
+              </div>
+            ))}
+          </div>
+          <p class="mt-2 text-[10px] text-slate-500">Kopplingar via fraga_kunskapsmal. Se hela Question Genome för mönster över tid.</p>
+        </section>
+      )}
+    </article>
+
+    <div class="mt-6">
+      <EcosystemLinks
+        context="fraga"
+        amne={amne}
+        arskurs={prov?.arskurs_kurs}
+        hasKunskapsmal={kunskapsmalList.length > 0}
+        questionText={fraga.text}
+        kunskapsmalKoder={kunskapsmalList.map((km: { kod: string }) => km.kod)}
+      />
+    </div>
+
+    <div class="mt-6">
+      <DataStatus variant="fraga" />
+    </div>
+
+    <!-- Real contribution form (posts to /api/contribute, status=pending) -->
+    <div class="mt-4 p-4 border border-dashed border-teal-200 rounded-3xl text-sm">
+      <div class="font-medium text-teal-800">Bidra med förklaring eller koppling</div>
+      <p class="text-xs text-slate-600 mt-1">Föreslå förbättringar till vanliga_missforstand, varfor_viktig eller kunskapsmålskoppling. Bidrag sparas i community_forklaring (pending) med full provenance och blir publikt efter granskning.</p>
+      <form id="fraga-contrib" class="mt-2 text-xs" data-fraga-id={fragaId} data-prov-slug={provSlug} data-fraga-nummer={fraga.fraga_nummer}>
+        <textarea name="text" class="w-full border border-slate-300 rounded p-2 text-xs" placeholder="Ditt förslag (t.ex. vanligt missförstånd: ...)" rows="2" required></textarea>
+        <button type="submit" class="mt-1 px-3 py-1 bg-teal-800 text-white rounded text-xs">Skicka bidrag</button>
+      </form>
+      <div id="fraga-contrib-status" class="mt-1 text-[10px]"></div>
+      <p class="mt-1 text-[10px] text-slate-500">Alla bidrag granskas. <a href="/bidra" class="underline">Se /bidra för fler typer →</a></p>
+
+      <script>
+        const fform = document.getElementById('fraga-contrib');
+        const fstatus = document.getElementById('fraga-contrib-status');
+        if (fform) {
+          fform.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            fstatus.textContent = 'Skickar...';
+            const fd = new FormData(fform);
+            const payload = {
+              fragaRef: fform.dataset.fragaId || (fform.dataset.provSlug + ' fraga ' + (fform.dataset.fragaNummer || '')),
+              typ: 'Per-fråga bidrag',
+              text: fd.get('text'),
+              roll: 'Lärare / sakkunnig',
+            };
+            try {
+              const res = await fetch('/api/contribute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              const json = await res.json();
+              fstatus.textContent = json.success ? (json.message || 'Tack! Pending.') : ('Fel: ' + (json.error || ''));
+              if (json.success) fform.reset();
+            } catch (err) {
+              fstatus.textContent = 'Fel vid skickande.';
+            }
+          });
+        }
+      </script>
+    </div>
+
+    <StructuredData type="BreadcrumbList" data={{
+      items: [
+        { "@type": "ListItem", "position": 1, "name": "Startsida", "item": "https://npprov.se/" },
+        { "@type": "ListItem", "position": 2, "name": "Alla prov", "item": "https://npprov.se/prov" },
+        { "@type": "ListItem", "position": 3, "name": titel, "item": `https://npprov.se/prov/${provSlug}` },
+        { "@type": "ListItem", "position": 4, "name": `Fråga ${fraga.fraga_nummer}`, "item": `https://npprov.se/prov/${provSlug}/fraga/${fragaId}` }
+      ]
+    }} />
+    <StructuredData type="Question" data={questionLd} />
+
+    {kunskapsmalList.length > 0 && (
+      <StructuredData 
+        type="DefinedTerm" 
+        data={{
+          name: kunskapsmalList[0].kod,
+          termCode: kunskapsmalList[0].kod,
+          description: kunskapsmalList[0].beskrivning,
+          inDefinedTermSet: { "@type": "DefinedTermSet", "name": "Lgr22 / Gy25", "url": "https://npprov.se/genome" }
+        }} 
+      />
+    )}
+  </main>
+</Layout>

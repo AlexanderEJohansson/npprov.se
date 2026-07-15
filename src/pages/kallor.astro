@@ -1,0 +1,69 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Provenance from '../components/Provenance.astro';
+import StructuredData from '../components/StructuredData.astro';
+---
+
+<Layout
+  title="Källor"
+  description="Verifierade källor till nationella prov: Skolverket, lärosäten och offentliga arkiv med direktlänkar."
+  canonical="https://npprov.se/kallor"
+>
+  <main class="max-w-4xl mx-auto px-6 py-10">
+    <a href="/" class="text-sm text-teal-700">← Tillbaka till startsidan</a>
+
+    <h1 class="mt-6 text-4xl font-semibold tracking-tight">Källor och ursprung</h1>
+
+    <div class="mt-6 text-lg text-slate-600">
+      Allt material på NPprov.se kommer från offentliga källor som Skolverket och de lärosäten som på uppdrag av Skolverket konstruerar de nationella proven. 
+      Vi speglar bara det som är fritt från sekretess och får användas.
+    </div>
+
+    <div class="mt-10 space-y-8">
+      <div>
+        <h2 class="font-semibold text-xl">Huvudkällor</h2>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><strong>Skolverket</strong> – <a href="https://www.skolverket.se/prov-och-bedomning/nationella-prov/bestall-nationella-prov/gamla-nationella-prov" target="_blank" class="underline">Gamla nationella prov (officiell lista)</a></li>
+          <li><strong>Uppsala universitet</strong> – <a href="https://www.uu.se/nationella-prov/geografi/aldre-prov-och-bedomningsstod" target="_blank" class="underline">Geografi</a> (åk 6 och 9), Svenska och svenska som andraspråk (åk 3, 6, 9 och gymnasiet)</li>
+          <li><strong>Umeå universitet</strong> – NO-ämnen (åk 9) och matematik (gymnasiet nivå 2–4)</li>
+          <li><strong>Stockholms universitet (PRIM-gruppen)</strong> – Matematik (åk 3, 6, 9 och gymnasiet nivå 1)</li>
+          <li><strong>Göteborgs universitet</strong> – Engelska, SO-ämnen (samhällskunskap, religion) och moderna språk</li>
+          <li><strong>Malmö universitet</strong> – Historia (åk 9)</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="font-semibold text-xl">Vår princip</h2>
+        <p class="text-sm text-slate-600 mt-1">
+          Vi anger alltid källa (t.ex. "Umeå universitet" eller "Skolverket") på varje post med direkt länk. 
+          Länkar går i första hand till den officiella publiceringen från Skolverket eller det ansvariga lärosätet. 
+          Lokala kopior är arkiverade här för långsiktig tillgänglighet och bekvämlighet – den officiella källan är alltid den auktoritativa versionen.
+        </p>
+      </div>
+
+      <div class="text-xs text-slate-500">
+        Senast kontrollerade källor: Skolverkets sida för gamla nationella prov (2025–2026).
+      </div>
+
+      <div class="mt-8 text-xs border-l-2 border-slate-200 pl-3 text-slate-500">
+        <strong>Provenance-princip:</strong> Varje prov och varje fraga har fälten kalla, kalla_url, human_reviewed och last_updated. 
+        Officiell källa är alltid auktoritativ. Lokala filer är enbart arkiverade kopior för tillgänglighet.
+      </div>
+
+      <Provenance kalla="Skolverket m.fl. lärosäten" kallaUrl="https://www.skolverket.se/prov-och-bedomning/nationella-prov" showFull={false} />
+    </div>
+  </main>
+
+  <StructuredData type="WebPage" data={{
+    name: "Källor och ursprung",
+    description: "Officiella källor för nationella prov: Skolverket, Uppsala universitet (bl.a. Geografi), Umeå universitet, Stockholms universitet, Göteborgs universitet, Malmö universitet.",
+    url: "https://npprov.se/kallor",
+    about: { "@type": "DefinedTerm", "name": "Provenance", "description": "Varje post har kalla, kalla_url, human_reviewed och last_updated." }
+  }} />
+  <StructuredData type="BreadcrumbList" data={{
+    items: [
+      { "@type": "ListItem", "position": 1, "name": "Startsida", "item": "https://npprov.se/" },
+      { "@type": "ListItem", "position": 2, "name": "Källor", "item": "https://npprov.se/kallor" }
+    ]
+  }} />
+</Layout>

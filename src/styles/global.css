@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@reference "tailwindcss";
+
+/* npprov.se – Professionell, pedagogisk, lugn design */
+:root {
+  --color-primary: #0f766e;      /* Teal – seriös och pedagogisk */
+  --color-primary-dark: #115e59;
+  --color-accent: #134e4b;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "kern" "tnum";
+}
+
+h1, h2, h3 {
+  font-feature-settings: "kern" "tnum";
+  line-height: 1.1;
+}
+
+.provenance {
+  font-size: 0.75rem;
+  color: #64748b;
+  border-left: 3px solid #0f766e;
+  padding-left: 0.75rem;
+}
+
+.card {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgb(15 118 110 / 0.08), 0 4px 6px -4px rgb(15 118 110 / 0.08);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.filter-active {
+  background-color: #0f766e;
+  color: white;
+  border-color: #0f766e;
+}
+
+/* För AEO / maskinläsbarhet – semantisk extra */
+.provenance strong {
+  color: #0f766e;
+}

@@ -1,0 +1,31 @@
+<svg width="140" height="32" viewBox="0 0 140 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon -->
+  <rect x="0" y="2" width="26" height="26" rx="6" fill="#134E4A"/>
+  <text 
+    x="13" 
+    y="21" 
+    text-anchor="middle" 
+    fill="white" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+    font-size="15" 
+    font-weight="700" 
+    letter-spacing="-0.8">NP</text>
+
+  <!-- Wordmark -->
+  <text 
+    x="34" 
+    y="21" 
+    fill="#134E4A" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+    font-size="17" 
+    font-weight="600" 
+    letter-spacing="-0.3">np</text>
+  <text 
+    x="55" 
+    y="21" 
+    fill="#0F766E" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+    font-size="17" 
+    font-weight="500" 
+    letter-spacing="-0.3">prov</text>
+</svg>

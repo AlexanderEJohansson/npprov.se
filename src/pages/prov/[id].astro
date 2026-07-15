@@ -1,0 +1,435 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { createSupabaseServerClient } from '../../lib/supabase';
+
+// Fallback: manifest ger oss alla kända slugs/ids även om DB inte är tillgänglig vid build
+import manifest from '../../data/manifest.json';
+import PerFraga from '../../components/PerFraga.astro';
+import FragaToc from '../../components/FragaToc.astro';
+import FragaCountBadge from '../../components/FragaCountBadge.astro';
+import Provenance from '../../components/Provenance.astro';
+import StructuredData from '../../components/StructuredData.astro';
+import DataStatus from '../../components/DataStatus.astro';
+import EcosystemLinks from '../../components/EcosystemLinks.astro';
+import { formatProvTitel, formatProvTyp } from '../../lib/format-titel';
+
+export async function getStaticPaths() {
+  let items: any[] = [];
+
+  try {
+    const supabase = createSupabaseServerClient();
+    const { data } = await supabase
+      .from('prov')
+      .select('id, slug')
+      .limit(200);
+    if (data && data.length > 0) items = data;
+  } catch (e) {
+    // Fall back silently – build får ändå alla sidor
+  }
+
+  if (items.length === 0) {
+    // Fallback från lokalt manifest (alltid tillgängligt)
+    items = manifest.map((m: any) => ({ id: m.id, slug: null }));
+  }
+
+  return items.map((p: any) => ({
+    params: { id: p.slug || p.id },
+  }));
+}
+
+// Per-sida data (live från Supabase när möjligt, annars graceful)
+const supabase = createSupabaseServerClient();
+const provParam = Astro.params.id as string;
+const provParamIsUuid = /^[0-9a-fA-F-]{36}$/.test(provParam);
+
+let item: any = null;
+try {
+  const query = supabase.from('prov').select('*');
+  const { data } = provParamIsUuid
+    ? await query.or(`slug.eq.${provParam},id.eq.${provParam}`).single()
+    : await query.eq('slug', provParam).single();
+  item = data;
+} catch (_) {
+  // Om vi inte får data från DB: bygg en minimal item från manifest så sidan inte kraschar
+  const m = (manifest as any[]).find((x: any) => x.id === Astro.params.id || x.title === Astro.params.id);
+  if (m) {
+    item = {
+      id: m.id,
+      slug: null,
+      titel: m.title,
+      amne: m.subject || 'Okänt',
+      ar: m.year,
+      termin: m.term || '',
+      typ: m.type || '',
+      kalla: 'Skolverket m.fl.',
+      kalla_url: m.source_url || '#',
+      metadata: m.original_filename ? { original_filename: m.original_filename } : null,
+    };
+  }
+}
+
+if (!item) {
+  // Sista utväg – redirect eller tom
+  item = { titel: 'Prov ej hittat', amne: 'Okänt', ar: '', termin: '', typ: '', kalla: '—', kalla_url: '/prov' };
+}
+
+const amne = item?.amne || 'Okänt ämne';
+const ar = item?.ar || '';
+const termin = item?.termin || '';
+const typ = item?.typ || '';
+const titel = formatProvTitel(item || {});
+const typLabel = formatProvTyp(typ);
+const kalla = item?.kalla || 'Skolverket';
+const kallaUrl = item?.kalla_url || '#';
+const localFilename = item?.metadata?.original_filename;
+const localPdfPath =
+  (item?.pdf_url?.startsWith('/prov/') ? item.pdf_url.replace(/^\/prov\//, '') : null) ||
+  localFilename ||
+  null;
+const localUrl = localPdfPath ? `/prov/${encodeURIComponent(localPdfPath).replace(/%2F/g, '/')}` : null;
+const zipUrl = item?.zip_url?.startsWith('/prov/')
+  ? `/prov/${encodeURIComponent(item.zip_url.replace(/^\/prov\//, '')).replace(/%2F/g, '/')}`
+  : null;
+
+// Load real granular data if present (delprov + fraga) – this is what makes the site authoritative
+// Must be loaded BEFORE any code that references delprovList / fragaByDelprov
+let delprovList: any[] = [];
+let fragaByDelprov: Record<string, any[]> = {};
+
+try {
+  const { data: dps } = await supabase
+    .from('delprov')
+    .select('*')
+    .eq('prov_id', item?.id)
+    .order('ordning', { ascending: true });
+
+  if (dps && dps.length > 0) {
+    delprovList = dps;
+
+    const delprovIds = dps.map((d: any) => d.id);
+    const { data: fs } = await supabase
+      .from('fraga')
+      .select('*')
+      .in('delprov_id', delprovIds)
+      .order('fraga_nummer', { ascending: true });
+
+    if (fs) {
+      fragaByDelprov = fs.reduce((acc: any, f: any) => {
+        if (!acc[f.delprov_id]) acc[f.delprov_id] = [];
+        acc[f.delprov_id].push(f);
+        return acc;
+      }, {});
+    }
+  }
+} catch (_) {
+  // graceful – page still works with prov-level data
+}
+
+const hasLocal = !!localUrl;
+const hasZip = !!zipUrl;
+const totalFragor = Object.values(fragaByDelprov).flat().length;
+const hasGranularData = totalFragor > 0;
+const archiveIndex: string[] = Array.isArray(item?.metadata?.archive_index)
+  ? item.metadata.archive_index
+  : [];
+const extraFiles: { label: string; url: string; lang?: string }[] = Array.isArray(
+  item?.metadata?.extra_files
+)
+  ? item.metadata.extra_files
+  : [];
+const facitCount = Object.values(fragaByDelprov)
+  .flat()
+  .filter((f: any) => f.korrekt_svar).length;
+
+// Dynamisk, auktoritativ schema.org för agenter (LearningResource + riktiga Question + DefinedTerm när data finns)
+const questions = delprovList.flatMap((dp: any) => 
+  (fragaByDelprov[dp.id] || []).map((f: any) => ({
+    "@type": "Question",
+    "name": `Fråga ${f.fraga_nummer} – ${dp.beteckning}`,
+    "text": f.text,
+    "url": `https://npprov.se/prov/${Astro.params.id}/fraga/${f.id}`,
+    "educationalLevel": amne.includes('gymnasiet') || amne.includes('Gy') ? "Gymnasial utbildning" : "Grundskola",
+    "learningResourceType": "AssessmentQuestion",
+    "educationalAlignment": {
+      "@type": "AlignmentObject",
+      "alignmentType": "teaches",
+      "educationalFramework": "Lgr22 / Gy25",
+      "targetDescription": "Kunskapskrav enligt aktuell kursplan"
+    }
+  }))
+);
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "LearningResource",
+  "name": titel,
+  "description": `Nationellt prov i ${amne} – ${ar} ${termin}. Offentligt material från ${kalla}. Full provenance och per-fråga-analys.`,
+  "educationalLevel": amne.includes('gymnasiet') || amne.includes('Gy') ? "Gymnasial utbildning" : "Grundskola",
+  "learningResourceType": "Prov / Bedömningsmaterial",
+  "provider": { "@type": "Organization", "name": kalla },
+  "url": `https://npprov.se/prov/${Astro.params.id}`,
+  "datePublished": ar ? `${ar}-01-01` : undefined,
+  "isAccessibleForFree": true,
+  "license": "https://www.skolverket.se/om-oss/om-webbplatsen/anvanda-innehall",
+  "hasPart": questions.length > 0 ? questions : {
+    "@type": "Question",
+    "name": "Exempel på uppgiftstyp i detta prov",
+    "educationalAlignment": {
+      "@type": "AlignmentObject",
+      "alignmentType": "teaches",
+      "educationalFramework": "Lgr22 / Gy25",
+      "targetDescription": "Kunskapskrav enligt aktuell kursplan"
+    }
+  },
+  "educationalAlignment": {
+    "@type": "AlignmentObject",
+    "alignmentType": "teaches",
+    "educationalFramework": "Lgr22 / Gy25",
+    "targetDescription": "Kunskapskrav enligt aktuell kursplan"
+  },
+  "about": {
+    "@type": "DefinedTerm",
+    "name": "Kunskapskrav Lgr22/Gy25",
+    "description": "Specifika krav från den gällande kursplanen som frågan testar."
+  },
+  "additionalProperty": [
+    { "@type": "PropertyValue", "name": "kalla", "value": kalla },
+    { "@type": "PropertyValue", "name": "kalla_url", "value": kallaUrl !== '#' ? kallaUrl : "" },
+    { "@type": "PropertyValue", "name": "human_reviewed", "value": item?.human_reviewed ? "true" : "false" },
+    { "@type": "PropertyValue", "name": "granular_fraga_count", "value": String(questions.length) },
+    { "@type": "PropertyValue", "name": "data_completeness", "value": questions.length > 0 ? "per-fraga" : "metadata-only" }
+  ]
+};
+---
+
+<Layout
+  title={titel}
+  description={`Nationellt prov i ${amne} – ${ar} ${termin}. Offentligt material från ${kalla} med full provenance och per-fråga-analys där data finns.`}
+  canonical={`https://npprov.se/prov/${Astro.params.id}`}
+>
+  <main class="max-w-4xl mx-auto px-6 py-10">
+    <a href="/prov" class="text-sm text-teal-700 hover:underline">← Tillbaka till alla prov</a>
+
+    <!-- Header -->
+    <div class="mt-4">
+      <div class="flex flex-wrap items-center gap-2 text-sm">
+        <span class="badge bg-teal-100 text-teal-800 font-medium">{amne}</span>
+        <span class="badge bg-slate-100 text-slate-700">{ar} {termin}</span>
+        {typ && <span class="badge bg-slate-100 text-slate-700">{typLabel}</span>}
+      </div>
+
+      <h1 class="text-4xl font-semibold tracking-tight mt-3 text-balance">{titel}</h1>
+
+      {archiveIndex.length > 0 && (
+        <nav class="mt-4 flex flex-wrap gap-2" aria-label="Läsår i arkivet">
+          {archiveIndex.map((slug: string) => (
+            <a
+              href={`/prov/${slug}`}
+              class="text-xs font-medium px-3 py-1 rounded-2xl border border-teal-200 bg-teal-50 text-teal-900 hover:bg-teal-100"
+            >
+              {slug.replace('geo-ak9-', 'År ')}
+            </a>
+          ))}
+        </nav>
+      )}
+
+      {hasGranularData && (
+        <div class="mt-3">
+          <FragaCountBadge count={totalFragor} size="md" />
+        </div>
+      )}
+
+      <div class="mt-3 text-sm text-slate-600">
+        <span class="font-medium">Källa:</span> {kalla}
+        {kallaUrl && kallaUrl !== '#' && (
+          <> • <a href={kallaUrl} target="_blank" class="underline hover:text-teal-700">Öppna officiell källa</a></>
+        )}
+      </div>
+    </div>
+
+    <!-- Starka, säkra nedladdningar (vision: alltid provenance + primärt officiell) -->
+    <div class="mt-6 p-5 bg-white border border-slate-200 rounded-3xl">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a 
+          href={kallaUrl} 
+          target="_blank"
+          class="inline-flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-900 active:bg-black text-white px-6 h-11 rounded-2xl text-sm font-semibold transition flex-1 sm:flex-none"
+        >
+          Ladda ner officiell PDF från {kalla} →
+        </a>
+
+        {hasLocal && (
+          <a 
+            href={localUrl} 
+            target="_blank"
+            class="inline-flex items-center justify-center gap-2 border border-emerald-700 text-emerald-800 hover:bg-emerald-50 px-5 h-11 rounded-2xl text-sm font-medium transition"
+          >
+            Ladda ner lokal arkiverad kopia (PDF)
+          </a>
+        )}
+
+        {hasZip && (
+          <a
+            href={zipUrl}
+            target="_blank"
+            class="inline-flex items-center justify-center gap-2 border border-slate-300 text-slate-700 hover:bg-slate-50 px-5 h-11 rounded-2xl text-sm font-medium transition"
+          >
+            Ladda ner arkiverat ZIP-paket
+          </a>
+        )}
+      </div>
+
+      {extraFiles.length > 0 && (
+        <div class="mt-4 flex flex-wrap gap-2">
+          {extraFiles.map((f) => (
+            <a
+              href={f.url}
+              target="_blank"
+              rel="noopener"
+              class="text-xs font-medium px-3 py-1.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-300"
+            >
+              {f.label}{f.lang === 'en' ? ' (EN)' : ''} →
+            </a>
+          ))}
+        </div>
+      )}
+
+      {facitCount > 0 && (
+        <p class="mt-3 text-xs text-emerald-800">
+          {facitCount} av {totalFragor} uppgifter har facit eller bedömningskriterier från UU.
+        </p>
+      )}
+      <p class="mt-3 text-xs text-slate-500 leading-relaxed">
+        Officiell källa är alltid den auktoritativa versionen. Lokala kopior är arkiverade här för bekvämlighet och långsiktig tillgänglighet. 
+        Allt material är offentligt och fritt från sekretess enligt Skolverkets riktlinjer. Kontrollera alltid ursprungskällan för eventuella uppdateringar.
+      </p>
+    </div>
+
+    {hasGranularData && (
+      <FragaToc
+        delprovList={delprovList}
+        fragaByDelprov={fragaByDelprov}
+        provSlug={Astro.params.id as string}
+      />
+    )}
+
+    <!-- Per-fråga-djup – auktoritativ analys av uppgifter (högsta kvalitet) -->
+    <section class="mt-10" id="uppgifter">
+      <div class="flex items-baseline justify-between mb-4">
+        <h2 class="font-semibold text-2xl tracking-tight">Uppgifter och per-fråga-analys</h2>
+        {delprovList.length > 0 && (
+          <div class="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-medium whitespace-nowrap">
+            {Object.values(fragaByDelprov).flat().length} strukturerade uppgifter • live från databasen
+          </div>
+        )}
+      </div>
+
+      {delprovList.length > 0 ? (
+        <div class="space-y-8">
+          {delprovList.map((dp: any) => {
+            const fs = fragaByDelprov[dp.id] || [];
+            return (
+              <div>
+                <div class="flex items-center gap-3 mb-3">
+                  <span class="inline-block px-3 py-1 text-sm font-medium bg-teal-100 text-teal-800 rounded-2xl">{dp.beteckning}</span>
+                  {dp.titel && <span class="text-slate-600 text-sm">{dp.titel}</span>}
+                </div>
+
+                {fs.length > 0 ? (
+                  <div class="space-y-4">
+                    {fs.map((f: any) => (
+                      <PerFraga fraga={f} dp={dp} provSlug={Astro.params.id} />
+                    ))}
+                  </div>
+                ) : (
+                  <p class="text-sm text-slate-600">Detta delprov är registrerat. Detaljerade uppgifter och analys läggs till löpande.</p>
+                )}
+
+                {dp.pdf_url && (
+                  <a 
+                    href={dp.pdf_url} 
+                    target="_blank" 
+                    class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:text-teal-800"
+                  >
+                    Öppna fullständigt bedömningsunderlag / delprov i PDF →
+                  </a>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="bg-white border border-slate-200 rounded-3xl p-6">
+          <p class="text-sm text-slate-600 mb-4">
+            Varje prov innehåller uppgifter som direkt testar specifika kunskapskrav enligt Lgr22 (grundskolan) eller Gy25 (gymnasiet). 
+            Här presenterar vi strukturen för detaljerad analys av enskilda frågor: frågetext, eventuella bilder eller tabeller, svarsalternativ, koppling till exakta kunskapskrav, vanliga elevmissförstånd och historiska varianter av liknande uppgifter.
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div class="border border-slate-100 rounded-2xl p-4">
+              <div class="font-medium mb-1 text-teal-800">Kunskapskrav (Lgr22 / Gy25)</div>
+              <p class="text-slate-600">Varje fråga är kopplad till en eller flera specifika krav i den gällande kursplanen. Detta gör det möjligt att se exakt vad som testas och hur det relaterar till undervisningen.</p>
+              <a href="/genome" class="inline-block mt-2 text-teal-700 hover:underline text-xs">Se Question Genome →</a>
+            </div>
+            <div class="border border-slate-100 rounded-2xl p-4">
+              <div class="font-medium mb-1 text-teal-800">Vanliga missförstånd</div>
+              <p class="text-slate-600">Elever missuppfattar ofta uppgiftens syfte, tolkar nyckelord på fel sätt eller använder olämpliga lösningsstrategier. Vi dokumenterar dessa systematiskt för att underlätta undervisning.</p>
+            </div>
+            <div class="border border-slate-100 rounded-2xl p-4">
+              <div class="font-medium mb-1 text-teal-800">Historiska varianter</div>
+              <p class="text-slate-600">Samma typ av uppgift återkommer i olika former över åren. Vi kartlägger mönster så att du kan se hur krav och formuleringar har utvecklats.</p>
+            </div>
+            <div class="border border-slate-100 rounded-2xl p-4">
+              <div class="font-medium mb-1 text-teal-800">Varför uppgiften är viktig</div>
+              <p class="text-slate-600">Vi kopplar uppgifter till centrala förmågor, framtida studier och yrkesliv. Fokus ligger på syftet bakom uppgiften, inte bara det korrekta svaret.</p>
+            </div>
+          </div>
+
+          <DataStatus variant="prov-detail" granularCount={totalFragor} />
+        </div>
+      )}
+    </section>
+
+    <!-- Full provenance (första klass, via komponent) -->
+    <Provenance 
+      kalla={kalla} 
+      kallaUrl={kallaUrl} 
+      humanReviewed={item?.human_reviewed} 
+      lastUpdated={item?.last_updated} 
+      showFull={true} 
+    />
+
+    <!-- Pedagogisk kontext / Varför viktigt (per vision) -->
+    <section class="mt-10">
+      <h2 class="font-semibold text-xl tracking-tight">Varför är detta prov viktigt?</h2>
+      <div class="prose prose-slate mt-3 text-[15px] text-slate-700 max-w-prose">
+        <p>
+          Nationella prov är en av de mest pålitliga indikatorerna på vad svenska elever faktiskt förväntas kunna vid en viss årskurs eller kurs. 
+          Detta {typLabel || 'prov'} i {amne.toLowerCase()} från {ar} ger en konkret bild av kunskapsmål, uppgiftstyper och bedömningsfokus just det året.
+        </p>
+        <p>
+          Genom att studera äldre prov ser lärare mönster i hur Skolverket och lärosätena formulerar uppgifter, vilka aspekter som värderas högt och hur kraven utvecklas över tid (särskilt inför Lgr22 och Gy25).
+        </p>
+      </div>
+    </section>
+
+    <div class="mt-8">
+      <EcosystemLinks
+        context="prov"
+        amne={amne}
+        arskurs={item?.arskurs_kurs}
+        hasGranularData={hasGranularData}
+      />
+    </div>
+
+    <!-- Schema.org för agenter och sökmotorer -->
+    <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+    <StructuredData type="BreadcrumbList" data={{
+      items: [
+        { "@type": "ListItem", "position": 1, "name": "Startsida", "item": "https://npprov.se/" },
+        { "@type": "ListItem", "position": 2, "name": "Alla prov", "item": "https://npprov.se/prov" },
+        { "@type": "ListItem", "position": 3, "name": titel, "item": `https://npprov.se/prov/${Astro.params.id}` }
+      ]
+    }} />
+  </main>
+</Layout>
