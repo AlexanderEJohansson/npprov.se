@@ -20,7 +20,7 @@ let pending: any[] = [];
 let approvedRecent: any[] = [];
 let rejectedRecent: any[] = [];
 
-if (!unauthorized) {
+if (!unauthorized && supabase) {
   const { data: pendingData } = await supabase
     .from('community_forklaring')
     .select(`

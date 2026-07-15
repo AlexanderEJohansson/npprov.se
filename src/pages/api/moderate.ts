@@ -29,6 +29,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const supabase = createSupabaseServerClient();
+    if (!supabase) {
+      return new Response(JSON.stringify({ success: false, error: 'Database not configured' }), { status: 503 });
+    }
 
     const { data: updated, error } = await supabase
       .from('community_forklaring')

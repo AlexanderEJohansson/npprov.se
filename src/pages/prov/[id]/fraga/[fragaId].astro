@@ -11,6 +11,7 @@ export async function getStaticPaths() {
   const paths: { params: { id: string; fragaId: string } }[] = [];
   try {
     const supabase = createSupabaseServerClient();
+    if (!supabase) return paths;
     const pageSize = 1000;
     let from = 0;
 
@@ -47,34 +48,35 @@ let delprov: any = null;
 let prov: any = null;
 let kunskapsmalList: any[] = [];
 
-try {
-  const { data: f } = await supabase
-    .from('fraga')
-    .select('*, delprov:delprov_id(*, prov:prov_id(*))')
-    .eq('id', fragaId)
-    .single();
+if (supabase) {
+  try {
+    const { data: f } = await supabase
+      .from('fraga')
+      .select('*, delprov:delprov_id(*, prov:prov_id(*))')
+      .eq('id', fragaId)
+      .single();
 
-  if (f) {
-    fraga = f;
-    delprov = f.delprov;
-    prov = f.delprov?.prov;
+    if (f) {
+      fraga = f;
+      delprov = f.delprov;
+      prov = f.delprov?.prov;
 
-    // Load linked knowledge requirements (fraga_kunskapsmal + kunskapsmal)
-    const { data: junctions } = await supabase
-      .from('fraga_kunskapsmal')
-      .select('styrka, kommentar, kunskapsmal:kunskapsmal_id(*)')
-      .eq('fraga_id', fragaId);
+      const { data: junctions } = await supabase
+        .from('fraga_kunskapsmal')
+        .select('styrka, kommentar, kunskapsmal:kunskapsmal_id(*)')
+        .eq('fraga_id', fragaId);
 
-    if (junctions) {
-      kunskapsmalList = junctions.map((j: any) => ({
-        ...j.kunskapsmal,
-        styrka: j.styrka,
-        kommentar: j.kommentar
-      }));
+      if (junctions) {
+        kunskapsmalList = junctions.map((j: any) => ({
+          ...j.kunskapsmal,
+          styrka: j.styrka,
+          kommentar: j.kommentar
+        }));
+      }
     }
+  } catch (_) {
+    // graceful – page will show honest status
   }
-} catch (_) {
-  // graceful – page will show honest status
 }
 
 if (!fraga) {

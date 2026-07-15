@@ -11,6 +11,7 @@ let kunskapsmal: any[] = [];
 let linkedExamples: Record<string, any[]> = {};
 let totalJunctions = 0;
 
+if (supabase) {
 try {
   const { data: km } = await supabase
     .from('kunskapsmal')
@@ -54,6 +55,7 @@ try {
   kunskapsmal = [];
   linkedExamples = {};
   totalJunctions = 0;
+}
 }
 
 // Top krav by heat for summary + ItemList schema

@@ -17,17 +17,19 @@ const supabase = createSupabaseServerClient();
 let items: any[] = [];
 let fragaCounts: Record<string, number> = {};
 let facitCounts: Record<string, number> = {};
-try {
-  const [{ data }, counts, facit] = await Promise.all([
-    supabase.from('prov').select('*').order('ar', { ascending: false }),
-    getFragaCountsByProvId(supabase),
-    getFacitCountsByProvId(supabase),
-  ]);
-  items = data || [];
-  fragaCounts = counts;
-  facitCounts = facit;
-} catch (_) {
-  items = [];
+if (supabase) {
+  try {
+    const [{ data }, counts, facit] = await Promise.all([
+      supabase.from('prov').select('*').order('ar', { ascending: false }),
+      getFragaCountsByProvId(supabase),
+      getFacitCountsByProvId(supabase),
+    ]);
+    items = data || [];
+    fragaCounts = counts;
+    facitCounts = facit;
+  } catch (_) {
+    items = [];
+  }
 }
 
 const medFraga = sortByFragaCount(

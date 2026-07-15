@@ -10,6 +10,7 @@ const supabase = createSupabaseServerClient();
 let trends: any[] = [];
 let trendStatus = 'Ingen trend_analys-data i databasen ännu.';
 
+if (supabase) {
 try {
   const { data } = await supabase
     .from('trend_analys')
@@ -22,6 +23,7 @@ try {
   }
 } catch (_) {
   trends = [];
+}
 }
 
 const reportData = {

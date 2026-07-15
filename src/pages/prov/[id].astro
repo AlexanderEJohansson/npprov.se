@@ -18,6 +18,7 @@ export async function getStaticPaths() {
 
   try {
     const supabase = createSupabaseServerClient();
+    if (!supabase) throw new Error('no supabase');
     const { data } = await supabase
       .from('prov')
       .select('id, slug')
@@ -43,13 +44,18 @@ const provParam = Astro.params.id as string;
 const provParamIsUuid = /^[0-9a-fA-F-]{36}$/.test(provParam);
 
 let item: any = null;
-try {
-  const query = supabase.from('prov').select('*');
-  const { data } = provParamIsUuid
-    ? await query.or(`slug.eq.${provParam},id.eq.${provParam}`).single()
-    : await query.eq('slug', provParam).single();
-  item = data;
-} catch (_) {
+if (supabase) {
+  try {
+    const query = supabase.from('prov').select('*');
+    const { data } = provParamIsUuid
+      ? await query.or(`slug.eq.${provParam},id.eq.${provParam}`).single()
+      : await query.eq('slug', provParam).single();
+    item = data;
+  } catch (_) {
+    // fall through to manifest fallback
+  }
+}
+if (!item) {
   // Om vi inte får data från DB: bygg en minimal item från manifest så sidan inte kraschar
   const m = (manifest as any[]).find((x: any) => x.id === Astro.params.id || x.title === Astro.params.id);
   if (m) {

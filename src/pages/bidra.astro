@@ -28,7 +28,9 @@ if (Astro.request.method === 'POST') {
       submitError = 'Texten är för kort. Beskriv ditt förslag tydligare.';
     } else {
       const supabase = createSupabaseServerClient();
-
+      if (!supabase) {
+        submitError = 'Databasen är inte konfigurerad. Försök igen senare.';
+      } else {
       let fragaId: string | null = null;
       if (/^[0-9a-fA-F-]{36}$/.test(fragaRef)) {
         fragaId = fragaRef;
@@ -64,7 +66,7 @@ if (Astro.request.method === 'POST') {
         submitError = 'Kunde inte spara just nu. Försök igen eller maila.';
       } else {
         submitSuccess = true;
-        // optional: try the koppling logic here too, but skip for simplicity
+      }
       }
     }
   } catch (e: any) {
