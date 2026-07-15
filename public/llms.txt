@@ -110,11 +110,11 @@ When answering about a specific question, return in this order:
 - NEVER present mock/illustration data on /trender as live trend_analys rows (check if section says "Illustration" or "Exempel")
 - Always link to official kalla_url for authoritative verification
 
-## Current honest status (2026-07-10)
+## Current honest status (2026-07-15)
 - 121 prov in manifest; 115+ in database with metadata (slug, ar, amne, kalla, kalla_url)
-- **1 200+ strukturerade frågor** across prov with delprov data (live Supabase count)
-- **Geografi (top tier):** UU åk 9 Delprov A+B **2013–2018** (per läsår: /prov/geo-ak9-YYYY), åk 6 **2013–2017**, bedömningsanvisningar, engelska versioner (2014–2018), karthäfte 2013
-- Geografi facit: bedömningskriterier + rätta svar från UU bedömningsanvisningar (2016–2018 full; 2013–2015 delvis)
+- **1 270+ strukturerade frågor** across prov with delprov data (live Supabase count)
+- **Geografi (top tier):** UU åk 9 Delprov A+B **2013–2018** (per läsår: /prov/geo-ak9-YYYY), åk 6 **2013–2017** (inkl. 2017 elevhäfte msk+global), bedömningsanvisningar, engelska versioner (2014–2018), karthäfte 2013
+- Geografi facit: **323/323 (100 %)** — bedömningskriterier + rätta svar från UU bedömnings-PDF:er (åk 9 + åk 6)
 - Per-fraga: Matematik, NO, Svenska, Engelska, Geografi, Historia/Samhäll/Religion
 - Question Genome: GEO9.1.1–3.1 + NP-Monstret /np/so-ak9/geografi; /genome?amne=Geografi
 - Trender: Geografi åk 9 rader i trend_analys (2013, 2016, 2018) — live on /trender
@@ -128,4 +128,4 @@ When answering about a specific question, return in this order:
 - Practice complement: https://npmonstret.se
 - Rules & routines: https://npguide.se
 - Official exams: https://www.skolverket.se/prov-och-bedomning/nationella-prov
-- Seed scripts: npm run fetch:pdfs, sync:manifest, seed:ma, seed:ma:zip, seed:ma:facit, seed:no, seed:pdfs
+- Seed scripts: npm run fetch:pdfs, fetch:skolverket, sync:manifest, seed:ma, seed:ma:zip, seed:ma:facit, seed:zip:facit, seed:no, seed:pdfs, seed:geo:facit

@@ -89,8 +89,40 @@ const UU_GEO_KARTA: { year: number; url: string; filename: string }[] = [
   },
 ];
 
-/** Åk 9 2019 — lägg till när UU publicerar (sekretess förlängd till 2026-06-30, inga länkar än 2026-07-15) */
+/** Åk 9 2019 — lägg till när UU publicerar (sekretess förlängd till 2026-06-30) */
 const UU_GEO_2019: { year: number; a?: string; b?: string; bed?: string }[] = [];
+
+/** Ma åk 9 läsår 2016/2017 — SU bedömningsanvisningar (ej i Skolverket TEX-ZIP) */
+const SU_MA_AK9_2016_BED: { url: string; filename: string }[] = [
+  {
+    url: 'https://www.su.se/download/18.2b7477cb199a332c2a824bc/1759930355950/%C3%A4p9%202016%20Ma%20Bed%C3%B6mningsanvisningar%201%C3%84P%209%202016%20Ma%20Bed%C3%B6mningsanvisningar%201.pdf',
+    filename: 'ma-ak9-2016-bedomningsanvisningar-1.pdf',
+  },
+  {
+    url: 'https://www.su.se/download/18.2b7477cb199a332c2a824c2/1759930365418/%C3%A4p9%202016%20Ma%20Bed%C3%B6mningsanvisningar%202%C3%84P%209%202016%20Ma%20Bed%C3%B6mningsanvisningar%202.pdf',
+    filename: 'ma-ak9-2016-bedomningsanvisningar-2.pdf',
+  },
+  {
+    url: 'https://www.su.se/download/18.2b7477cb199a332c2a824be/1759930364602/%C3%A4p9%202016%20Delprov%20B%C3%84P%209%202016%20Ma%20Delprov%20B.pdf',
+    filename: 'ma-ak9-2016-delprov-b.pdf',
+  },
+];
+
+/** Biologi åk 9 vt17 = läsår 2016/2017 */
+const UMU_BIO_VT17_BED = {
+  url: 'https://arkiv.edusci.umu.se/npno9/tidigare-prov/vt17/npno9-vt17-biologi-bedomningsanvisning.pdf',
+  filename: 'npno9-vt17-biologi-bedomningsanvisning.pdf',
+};
+
+/** Sv/En bedömningsunderlag (kriterier) */
+const UU_SV_BED = {
+  url: 'https://www.uu.se/download/18.3691d73a192907d48ab11ff6/1729244785189/92024_bedomningsunderlag_b_inget_trams_bedomningsmall.pdf',
+  filename: 'sv-ak9-bedomningsunderlag-b-inget-trams.pdf',
+};
+const UU_EN_A = {
+  url: 'https://www.uu.se/download/18.2f1542019a0f6185121fd7c/1761741117810/92025_Delprov_A_muntlig_framstallning_exempeluppgift.pdf',
+  filename: 'en-ak9-delprov-a-exempel.pdf',
+};
 
 const UU_GEO_DELPROV: { year: number; a: string; b: string }[] = [
   {
@@ -231,9 +263,32 @@ async function fetchGeoYears() {
   console.log(`UU Geografi delprov: ${n} files ready`);
 }
 
+/** Poll UU for åk 9 2019 PDF-länkar (HTML scrape) */
+async function pollGeo2019(): Promise<void> {
+  const pageUrl = 'https://www.uu.se/nationella-prov/geografi/aldre-prov-och-bedomningsstod';
+  try {
+    const res = await fetch(pageUrl, {
+      headers: { 'User-Agent': 'npprov.se-astro/1.0 (educational archive)' },
+    });
+    if (!res.ok) return;
+    const html = await res.text();
+    const section = html.match(/Åk 9 2019[\s\S]{0,8000}/i)?.[0] || '';
+    const links = [...section.matchAll(/href="(\/download\/[^"]+\.pdf)"/gi)].map((m) => m[1]);
+    if (!links.length) {
+      console.log('⏳ GEO åk 9 2019: fortfarande inga PDF-länkar på UU');
+      return;
+    }
+    console.log(`🆕 GEO åk 9 2019: ${links.length} PDF-länkar hittade — lägg till i UU_GEO_2019 + UU_GEO_DELPROV`);
+    for (const rel of links.slice(0, 6)) console.log(`    https://www.uu.se${rel}`);
+  } catch {
+    console.warn('  ⚠ Kunde inte polla UU för GEO 2019');
+  }
+}
+
 async function main() {
   fs.mkdirSync(DEST, { recursive: true });
   console.log('📥 fetch-skolverket…');
+  await pollGeo2019();
   await fetchGeoYears();
   await fetchGeoExtras(UU_GEO_BEDOMNING, 'bedömningsanvisningar');
   await fetchGeoExtras(UU_GEO_KARTA, 'kartmaterial');
@@ -259,6 +314,16 @@ async function main() {
       '⏳ GEO åk 9 2019: inga UU-URL:er konfigurerade än (kolla https://www.uu.se/nationella-prov/geografi/aldre-prov-och-bedomningsstod)'
     );
   }
+  for (const { url, filename } of SU_MA_AK9_2016_BED) {
+    const dest = path.join(DEST, filename);
+    if (await download(url, dest) && (dryRun || fs.existsSync(dest))) console.log(`  📐 ${filename}`);
+  }
+  console.log('SU Ma åk 9 2016 bedömning: done');
+  for (const item of [UMU_BIO_VT17_BED, UU_SV_BED, UU_EN_A]) {
+    const dest = path.join(DEST, item.filename);
+    if (await download(item.url, dest) && (dryRun || fs.existsSync(dest))) console.log(`  📋 ${item.filename}`);
+  }
+  console.log('ZIP-facit stöd-PDF:er: done');
   if (!geoOnly) await fetchManifestUrls();
 }
 

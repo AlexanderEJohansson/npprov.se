@@ -33,18 +33,8 @@ const AK6_FACIT = [
   { year: 2013, slug: 'geo-ak6-2013', bed: 'geo-ak6-2013-bedomningsanvisningar.pdf' },
   { year: 2014, slug: 'geo-ak6-2014', bed: 'geo-ak6-2014-bedomningsanvisningar.pdf' },
   { year: 2015, slug: 'geo-ak6-2015', bed: 'geo-ak6-2015-bedomningsanvisningar.pdf' },
-  {
-    year: 2017,
-    slug: 'geo-ak6-2017-msk',
-    bed: 'geo-ak6-2017-msk-natur-bedomning.pdf',
-    singleElevhafte: true,
-  },
-  {
-    year: 2017,
-    slug: 'geo-ak6-2017-global',
-    bed: 'geo-ak6-2017-global-bedomning.pdf',
-    singleElevhafte: true,
-  },
+  { year: 2017, slug: 'geo-ak6-2017-msk', bed: 'geo-ak6-2017-msk-natur-bedomning.pdf' },
+  { year: 2017, slug: 'geo-ak6-2017-global', bed: 'geo-ak6-2017-global-bedomning.pdf' },
 ] as const;
 
 async function extractPdfText(filePath: string): Promise<string> {

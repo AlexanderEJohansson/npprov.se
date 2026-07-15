@@ -262,6 +262,57 @@ const JUNK_THEMES = new Set([
   'B D E A C', 'S V Ö', 'E C A E C A E C A E C A',
 ]);
 
+const JUNK_TITLE_RE =
+  /^(A B C D|E C A(?: E C A)+|J F M A M J J A S O N D|B D E A C|S V Ö|A T L A N T E N)$/i;
+
+export function isGeoJunkFraga(text: string): boolean {
+  const title = text.split(':')[0]?.trim() || text.trim();
+  if (JUNK_TITLE_RE.test(title)) return true;
+  if (JUNK_THEMES.has(title.toUpperCase())) return true;
+  if (/^E C A(?: E C A){2,}/i.test(title)) return true;
+  return false;
+}
+
+/** Åk 6 2017 elevhäfte — split on Uppgift N blocks */
+export function parseGeografiAk6Elevhafte(
+  text: string,
+  year: number,
+  tema: string
+): FragaSeed[] {
+  const clean = sanitizePdfText(text);
+  const hits = [...clean.matchAll(/Uppgift\s+(\d{1,2})\b/gi)];
+  if (!hits.length) return [];
+
+  const seeds: FragaSeed[] = [];
+  for (let i = 0; i < hits.length; i++) {
+    const num = hits[i][1];
+    const start = hits[i].index ?? 0;
+    const end = i + 1 < hits.length ? hits[i + 1].index! : clean.length;
+    const body = clean
+      .slice(start, end)
+      .replace(/^Uppgift\s+\d{1,2}\b\s*/i, '')
+      .replace(/!{2,}/g, ' ')
+      .replace(/_{5,}/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (body.length < 40) continue;
+
+    const titleMatch = body.match(/^([A-ZÅÄÖ][a-zåäöA-ZÅÄÖ\s\-]{4,48}?)(?=\s+[a-z]\)|\s+Studera|\s+Välj|\s+Skriv|\s+Para|\s+Fyll)/);
+    const title = titleMatch?.[1]?.trim() || `Uppgift ${num}`;
+
+    seeds.push({
+      fraga_nummer: num,
+      typ: inferTyp(body),
+      text: `${title}: ${body.slice(0, 1400)}`,
+      vanliga_missforstand: geoMissforstand(body),
+      varfor_viktig: `Geografi åk 6 (${year}) – ${tema}, ${title}.`,
+      max_poang: inferTyp(body) === 'lang_svar' ? 4 : 2,
+      kalla: `Uppsala universitet (Geografi åk 6, ${year} ${tema})`,
+    });
+  }
+  return seeds;
+}
+
 /** Older UU PDFs (2013–2015) — numbered thematic blocks */
 export function parseGeografiNumberedSections(text: string, year: number, delprov: 'A' | 'B'): FragaSeed[] {
   const clean = sanitizePdfText(text);
@@ -302,7 +353,10 @@ export function parseGeografiThemeSections(text: string, year: number): FragaSee
   const clean = sanitizePdfText(text);
   const seeds: FragaSeed[] = [];
   const re = /\n([A-ZÅÄÖ][A-ZÅÄÖ\s\-]{4,42})\n/g;
-  const hits = [...clean.matchAll(re)].filter((h) => !JUNK_THEMES.has(h[1].trim()));
+  const hits = [...clean.matchAll(re)].filter((h) => {
+    const title = h[1].trim();
+    return !JUNK_THEMES.has(title) && !isGeoJunkFraga(`${title}:`);
+  });
 
   for (let i = 0; i < hits.length; i++) {
     const title = hits[i][1].trim();
@@ -412,6 +466,11 @@ export function parseGeografiAk6DelprovB2013(text: string): FragaSeed[] {
 }
 
 export function resolveGeoAk6Parser(filename: string, year: number): (text: string) => FragaSeed[] {
+  if (/elevhäfte|elevhafte/i.test(filename)) {
+    const tema = /global/i.test(filename) ? 'En global värld' : 'Människa och natur i samspel';
+    return (t) => parseGeografiAk6Elevhafte(t, year, tema);
+  }
+
   const m = filename.match(/delprov-([ab])\.pdf$/i);
   const letter = (m?.[1]?.toUpperCase() ?? 'A') as 'A' | 'B';
 

@@ -32,7 +32,14 @@ if (!yearArg || !/^\d{4}$/.test(yearArg)) {
 
 const YEAR = Number(yearArg);
 const PROV_DIR = path.resolve('public/prov');
-const slug = `geo-ak6-${YEAR}`;
+const slugArg = process.argv.find((a) => a.startsWith('--slug='))?.split('=')[1];
+const slug =
+  slugArg ||
+  (YEAR === 2017 && process.argv.includes('--msk')
+    ? 'geo-ak6-2017-msk'
+    : YEAR === 2017 && process.argv.includes('--global')
+      ? 'geo-ak6-2017-global'
+      : `geo-ak6-${YEAR}`);
 
 const supabase = createClient(
   process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!,
@@ -112,15 +119,28 @@ async function main() {
   const letters = delprovFilter ? [delprovFilter] : (['A', 'B'] as const);
   let total = 0;
 
-  for (const letter of letters) {
-    const file = `geo-ak6-${YEAR}-delprov-${letter.toLowerCase()}.pdf`;
+  const isElevhafte = slug.includes('2017-');
+  const workItems = isElevhafte
+    ? [
+        {
+          file:
+            slug === 'geo-ak6-2017-global'
+              ? 'geo-ak6-2017-global-elevhäfte.pdf'
+              : 'geo-ak6-2017-msk-natur-elevhäfte.pdf',
+          beteckning: 'Elevhäfte',
+        },
+      ]
+    : letters.map((letter) => ({
+        file: `geo-ak6-${YEAR}-delprov-${letter.toLowerCase()}.pdf`,
+        beteckning: `Delprov ${letter}`,
+      }));
+
+  for (const { file, beteckning } of workItems) {
     const pdfPath = path.join(PROV_DIR, file);
     if (!fs.existsSync(pdfPath)) {
       console.warn(`  ⚠ Missing ${file}`);
       continue;
     }
-
-    const beteckning = `Delprov ${letter}`;
     const { data: dp } = await supabase
       .from('delprov')
       .select('id')
@@ -130,7 +150,7 @@ async function main() {
     if (!dp?.id) throw new Error(`Delprov not found: ${beteckning}`);
 
     const text = await extractPdfText(pdfPath);
-    const parse = resolveGeoAk6Parser(file, YEAR);
+    const parse = resolveGeoAk6Parser(file, YEAR === 2017 && isElevhafte ? 2017 : YEAR);
     const seeds = parse(text);
     if (!seeds.length) {
       console.warn(`  ⚠ 0 frågor in ${file}`);
