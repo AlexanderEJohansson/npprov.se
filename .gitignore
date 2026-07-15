@@ -25,3 +25,5 @@ pnpm-debug.log*
 .vercel
 .env*
 .tmp/
+# Stora prov-PDF:er (finns på Vercel; undvik 800MB+ git push)
+public/prov/
