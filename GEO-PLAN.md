@@ -6,24 +6,27 @@
 
 ---
 
-## Nuläge (2026-07-10)
+## Nuläge (2026-07-15)
 
 | Dimension | Status |
 |-----------|--------|
 | Åk 9 delprov sv 2013–2018 | ✅ 12/12 PDF:er lokalt |
-| Strukturerade frågor | ✅ 95 (section-level) |
-| Kunskapsmål GEO9.x | ✅ 3 koder, 99 junctions |
-| Per-fråga-sidor | ✅ ~95 dedikerade URL:er |
+| Åk 6 prov 2013–2015 + 2017 | ✅ 16 PDF:er + bedömning lokalt |
+| Strukturerade GEO-frågor | ✅ 323 (åk 9: 271, åk 6: 52) |
+| Kunskapsmål GEO9.x | ✅ 3 koder, junctions i DB |
+| Per-fråga-sidor | ✅ ~323 dedikerade URL:er |
 | Question Genome | ✅ GEO9.1.1–3.1 med NP-Monstret-länkar |
-| Bedömningsanvisningar | ❌ 0/6 år |
-| Facit/korrekt_svar | ❌ 0 % |
-| Engelska versioner | ❌ 0/10 |
-| Kartmaterial | ❌ 2013 karthäfte saknas |
-| Åk 6 geografi | ❌ 0 filer |
-| Åk 9 2019 | ⏳ Sekretess till 2026-06-30 |
-| Browse per läsår | ⚠️ 1 prov-rad, titel säger 2016 |
+| Bedömningsanvisningar åk 9 | ✅ 6/6 år (2013–2018) |
+| Facit/korrekt_svar GEO | ✅ **319/323 (99 %)** |
+| Facit åk 9 2013–2018 | ✅ 271/271 (100 %) |
+| Facit åk 6 | ✅ 48/52 (92 %) — 2013 omparserad (9 uppgifter) |
+| Engelska versioner åk 9 | ✅ 2014–2018 i `public/prov/` |
+| Kartmaterial | ✅ Karthäfte/kartblad länkade (ej `bild_url`-extraktion) |
+| Browse per läsår | ✅ `geo-ak9-2013` … `geo-ak9-2018` + åk 6-rader |
+| Åk 9 2019 | ⏳ UU har **inga nedladdningslänkar** än (sekretess förlängd till 2026-06-30 p.g.a. inställda digitala prov 2024/25) |
+| Human review GEO | ❌ 0/323 granskade (`/moderera`) |
 
-**Unik fördel idag:** npprov har redan det som Skolverket/UU saknar – sökbar per-fråga-struktur, genome-kopplingar och ekosystemlänkar (NP-Monstret, NP-guide).
+**Unik fördel idag:** npprov har redan det som Skolverket/UU saknar – sökbar per-fråga-struktur, facit från bedömnings-PDF:er, genome-kopplingar och ekosystemlänkar (NP-Monstret, NP-guide).
 
 ---
 
@@ -45,50 +48,38 @@
 | Sök & filter per ämne/år | Officiell primär-PDF |
 | Per-fråga-URL + schema.org | Juridisk provenance |
 | GEO9 genome + NP-Monstret | Råmaterial auktoritet |
-| Missförstånd + pedagogik | Bedömningsanvisningar (tills vi har facit) |
+| Facit + bedömningskriterier | Bedömningsanvisningar (källa) |
 | Agentisk SEO (llms.txt) | Policy & sekretessinfo |
 
 ---
 
 ## Faser
 
-### Fas 0 – Snabbfixar (P0) ← *pågår nu*
-- [x] Rätt prov-titel: "Geografi åk 9 (2013–2018)"
-- [x] `delprov.pdf_url` per år/delprov
-- [x] Ta bort felaktig `zip_url`
-- [x] Uppdatera manifest med alla 12 delprov-PDF:er
-- [x] `/kallor`: UU som värd för Geografi
-- [x] `human_reviewed: false` på auto-parserade frågor
-- [x] Deduplicera `fraga_kunskapsmal`
-- [x] Hämta bedömningsanvisningar 2013–2018 (6 PDF:er) + karthäfte 2013
+### Fas 0 – Snabbfixar (P0) ✅
+- [x] Rätt prov-titel, `delprov.pdf_url`, manifest, `/kallor`, dedup junctions
+- [x] Bedömningsanvisningar 2013–2018 + karthäfte 2013
 
 ### Fas 1 – Arkivkomplett åk 9 ✅
-- [x] Bedömningsanvisningar fetch + länkar via `metadata.extra_files` på prov-sida
 - [x] Parser v2 (2013A, 2017A) + `expandLetteredSubQuestions`
-- [x] Per-läsår: 6 prov-rader `geo-ak9-2013` … `geo-ak9-2018` + arkivindex `a8f3c2e91b`
-- [x] Engelska versioner 2014–2018 i `public/prov/`
-- [x] Karthäfte 2013 hämtat + länkat
-- [x] Manifest: 121 poster inkl. per-läsår geo
+- [x] Per-läsår: 6 prov-rader `geo-ak9-2013` … `geo-ak9-2018`
+- [x] Engelska 2014–2018, karthäfte, manifest
 
 ### Fas 2 – Facit & uppgiftsnivå ✅ (delvis)
-- [x] `seed-geo-facit.ts` → ~101 frågor med facit/bedömningskriterier (2016–2018)
-- [x] Sub-question splitter (a/b/c-deluppgifter)
-- [ ] PDF-bildextraktion (kartor) — kart-PDF länkad, ej `bild_url` extraktion än
-- [x] `human_reviewed: false` på auto-parserade frågor
-- [x] "Med facit"-filter på `/prov` (ärlig — kräver `korrekt_svar`)
+- [x] `seed-geo-facit.ts` — åk 9: 100 %, åk 6: 92 %
+- [x] `reseed-geo-year.ts`, `reseed-geo-ak6-year.ts`
+- [x] Åk 6 2013: dedikerad marker-parser (9 bedömningsuppgifter)
+- [ ] PDF-bildextraktion (`extract-geo-images.ts`) — kart-PDF länkad, ej `bild_url`
+- [x] "Med facit"-filter på `/prov`
 
 ### Fas 3 – Åk 6 + 2019 ✅ (delvis)
-- [x] `seed-geo-ak6-pdfs.ts` — 5 prov, ~63 frågor
-- [ ] 2019 åk 9 — UU länkar ej publicerade än (kolla efter 2026-06-30)
-- [x] GEO9.x kunskapsmål i DB
-- [x] `seed-geo-trends.ts` — 3 rader i trend_analys
+- [x] `seed-geo-ak6-pdfs.ts` + `seed-geo-facit.ts --ak6-only`
+- [ ] **2019 åk 9** — väntar på UU-publicering (inga PDF-länkar på [aldre-prov](https://www.uu.se/nationella-prov/geografi/aldre-prov-och-bedomningsstod) 2026-07-15)
+- [x] `seed-geo-trends.ts`
 
 ### Fas 4 – Agentisk dominans ✅ (delvis)
-- [x] DefinedTerm GEO9.x på frågesidor (befintlig `aboutDefinedTerm`)
-- [x] llms.txt uppdaterad med geo-inventering
-- [x] Sitemap via @astrojs/sitemap (alla statiska frågesidor)
-- [x] EcosystemLinks (NP-Monstret/NP-guide)
+- [x] DefinedTerm GEO9.x, llms.txt, sitemap, EcosystemLinks
 - [x] `scripts/indexnow-ping.ts` + nyckel i `public/`
+- [ ] IndexNow efter varje deploy (körs manuellt / CI)
 
 ---
 
@@ -99,18 +90,25 @@ UU/Skolverket PDF:er
         ↓
 fetch-skolverket.ts  →  public/prov/geo-ak9-{year}-*.pdf
         ↓
-seed-geo-pdfs.ts     →  delprov + fraga + fraga_kunskapsmal
-lib/geo-parse.ts     →  year-specific parsers
+seed-geo-pdfs.ts     →  delprov + fraga (åk 9)
+seed-geo-ak6-pdfs.ts →  åk 6
+lib/geo-parse.ts     →  year/nivå-specifika parsers
+seed-geo-facit.ts    →  korrekt_svar från bedömnings-PDF
         ↓
-Astro static pages   →  /prov/a8f3c2e91b/fraga/{id}
+Astro static pages   →  /prov/geo-ak9-2016/fraga/{id}
         ↓
 /genome + llms.txt   →  agentisk SEO
 ```
 
-**Nya scripts att bygga (Fas 1–2):**
-- `seed-geo-facit.ts` – parsa bedömningsanvisningar → `korrekt_svar`
-- `seed-geo-ak6-pdfs.ts` – åk 6 pipeline
-- `extract-geo-images.ts` – kartor från PDF
+**Scripts:**
+- `npm run seed:geo:facit` — åk 9 + åk 6
+- `npm run reseed:geo:year -- --year 2013` — åk 9 ett läsår
+- `npm run reseed:geo:ak6:year -- --year 2013` — åk 6 ett läsår
+- `npm run indexnow:geo` — ping efter deploy
+
+**Kvar att bygga:**
+- `extract-geo-images.ts` — kartor från PDF → `bild_url`
+- `geo-ak9-2019` pipeline när UU publicerar
 
 ---
 
@@ -121,28 +119,27 @@ npprov.se ska **aldrig** påstå sig ha facit om det saknas. Statusfält:
 - `korrekt_svar` – endast från bedömningsanvisningar, aldrig gissat
 - DataStatus-komponenten – visa "auto-parserad" vs "granskad"
 
-Detta skiljer oss från generiska prov-sajter och bygger förtroende.
-
 ---
 
 ## Framgångsmått
 
-| Mått | Nu | Mål Fas 2 | Mål Fas 3 |
-|------|-----|-----------|-----------|
-| ak9 delprov PDF:er | 12 | 18 (+bedömning) | 18 |
-| Strukturerade frågor | 95 | 200+ | 300+ |
-| Frågor med facit | 0 | 80 %+ | 95 %+ |
-| Årskurser | ak9 | ak9 | ak6 + ak9 |
-| Läsår | 2013–2018 | 2013–2018 | +2019 |
-| Lighthouse SEO | ? | 95+ | 95+ |
+| Mått | Nu (2026-07-15) | Mål |
+|------|-----------------|-----|
+| ak9 delprov PDF:er | 12 + bedömning + eng | +2019 när UU släpper |
+| GEO-strukturerade frågor | 323 | 350+ med 2019 |
+| GEO frågor med facit | **319/323 (99 %)** | 95 %+ ✅ |
+| Årskurser | ak6 + ak9 | +2019 |
+| Läsår åk 9 | 2013–2018 | +2019 |
+| Human review GEO | 0 % | löpande via `/moderera` |
 
 ---
 
-## Nästa konkreta steg (efter Fas 0)
+## Nästa steg
 
-1. Kör `npm run fetch:skolverket -- --geo-only` med nya bedömnings-URL:er
-2. Bygg `seed-geo-facit.ts` (börja med 2016 – bäst parser)
-3. Splitta till 6 prov-rader i DB + manifest (ett läsår = en sökbar post på `/prov`)
-4. Deploy + IndexNow-ping för geo-frågesidor
+1. **2019** — polla UU efter PDF-länkar → `fetch-skolverket` + seed + facit
+2. **4 GEO-frågor utan facit** — åk 6 2014 A2, 2015 B (3 st): parser/facit-tema
+3. **Human review** — `/moderera` för GEO
+4. **`extract-geo-images.ts`** — kartbilder
+5. **Övriga ämnen** — Ma 349/563 (lokala gym-PDF:er uttömda); Sv/En kräver DOCX/TEX-bedömning (ej PDF-facit)
 
-*Senast uppdaterad: 2026-07-10*
+*Senast uppdaterad: 2026-07-15*

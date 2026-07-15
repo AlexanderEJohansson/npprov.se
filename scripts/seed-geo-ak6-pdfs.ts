@@ -9,7 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { PDFParse } from 'pdf-parse';
-import { parseGeografiThemeSections } from './lib/geo-parse';
+import { resolveGeoAk6Parser } from './lib/geo-parse';
 import { sanitizeDbText, sanitizePdfText } from './lib/sanitize-text';
 
 const dryRun = process.argv.includes('--dry-run');
@@ -78,7 +78,8 @@ async function main() {
       const full = path.join(PROV_DIR, file);
       if (!fs.existsSync(full)) continue;
       const text = await extractPdfText(full);
-      const seeds = parseGeografiThemeSections(text, entry.year);
+      const parse = resolveGeoAk6Parser(file, entry.year);
+      const seeds = parse(text);
       const beteckning = entry.files.length > 1 ? `Delprov ${i === 0 ? 'A' : 'B'}` : 'Elevhäfte';
       if (!seeds.length) {
         seeds.push({

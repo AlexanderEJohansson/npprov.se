@@ -330,6 +330,108 @@ export function parseGeografiThemeSections(text: string, year: number): FragaSee
   return seeds;
 }
 
+type GeoMarker = { num: string; title: string; re: RegExp };
+
+function parseGeografiMarkerSections(
+  text: string,
+  markers: GeoMarker[],
+  year: number,
+  delprov: 'A' | 'B',
+  niva: 'ak6' | 'ak9' = 'ak9'
+): FragaSeed[] {
+  const clean = sanitizePdfText(text);
+  const hits: { num: string; title: string; index: number }[] = [];
+
+  for (const m of markers) {
+    const match = m.re.exec(clean);
+    if (!match) continue;
+    const idx = match.index ?? 0;
+    if (hits.some((h) => h.num === m.num)) continue;
+    hits.push({ num: m.num, title: m.title, index: idx });
+  }
+
+  hits.sort((a, b) => a.index - b.index);
+  if (!hits.length) return [];
+
+  const seeds: FragaSeed[] = [];
+  for (let i = 0; i < hits.length; i++) {
+    const { num, title, index } = hits[i];
+    const end = i + 1 < hits.length ? hits[i + 1].index : clean.length;
+    const body = clean
+      .slice(index, end)
+      .replace(/!{2,}/g, ' ')
+      .replace(/_{5,}/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (body.length < 40) continue;
+
+    seeds.push({
+      fraga_nummer: num,
+      typ: inferTyp(body),
+      text: `${title}: ${body.slice(0, 1400)}`,
+      vanliga_missforstand: geoMissforstand(body),
+      varfor_viktig: `Geografi ${niva} Delprov ${delprov} (${year}) – ${title}.`,
+      max_poang: inferTyp(body) === 'lang_svar' ? 4 : 2,
+      kalla: `Uppsala universitet (Geografi ${niva}, ${year} Delprov ${delprov})`,
+    });
+  }
+  return seeds;
+}
+
+const GEO_AK6_2013_A_MARKERS: GeoMarker[] = [
+  {
+    num: '1',
+    title: 'Geografiska begrepp',
+    re: /Geografiska begrepp[\s\n]+1\s+Till vilken bild passar/i,
+  },
+  { num: '2', title: 'Läskunnighet och hälsa', re: /Läskunnighet[\s\n]+Fortfarande är det ca/i },
+  { num: '6', title: 'Golfströmmen och vatten', re: /Om du studerar båda sidorna av jorden/i },
+  { num: '9', title: 'Europakartan', re: /Vilket land har gräns mot Sverige/i },
+];
+
+const GEO_AK6_2013_B_MARKERS: GeoMarker[] = [
+  { num: '12', title: 'Kartans teckenförklaring', re: /Studera kartans teckenförklaring/i },
+  { num: '14', title: 'Väderstreck', re: /Skriv de fyra väderstrecken vid kompassrosen/i },
+  { num: '17', title: 'Kartan och väderstreck', re: /Studera kartan och fyll i rätt väderstreck/i },
+  { num: '20', title: 'Kartskala', re: /Para ihop rätt skala med rätt karta/i },
+  {
+    num: '22',
+    title: 'Rullstensåsar och flyttblock',
+    re: /Rullstensåsar och flyttblock|En ny väg mellan två stora städer/i,
+  },
+];
+
+export function parseGeografiAk6DelprovA2013(text: string): FragaSeed[] {
+  return parseGeografiMarkerSections(text, GEO_AK6_2013_A_MARKERS, 2013, 'A', 'ak6');
+}
+
+export function parseGeografiAk6DelprovB2013(text: string): FragaSeed[] {
+  return parseGeografiMarkerSections(text, GEO_AK6_2013_B_MARKERS, 2013, 'B', 'ak6');
+}
+
+export function resolveGeoAk6Parser(filename: string, year: number): (text: string) => FragaSeed[] {
+  const m = filename.match(/delprov-([ab])\.pdf$/i);
+  const letter = (m?.[1]?.toUpperCase() ?? 'A') as 'A' | 'B';
+
+  if (year === 2013 && letter === 'A') return parseGeografiAk6DelprovA2013;
+  if (year === 2013 && letter === 'B') return parseGeografiAk6DelprovB2013;
+
+  if (letter === 'B') {
+    return (t) => {
+      const numbered = parseGeografiNumberedSections(t, year, 'B');
+      if (numbered.length >= 2) return numbered;
+      const themes = parseGeografiThemeSections(t, year);
+      return themes.length >= 2 ? themes : numbered;
+    };
+  }
+  return (t) => {
+    const numbered = parseGeografiNumberedSections(t, year, 'A');
+    if (numbered.length >= 2) return numbered;
+    const themes = parseGeografiThemeSections(t, year);
+    return themes.length >= 2 ? themes : numbered;
+  };
+}
+
 export function resolveGeoParser(
   filename: string
 ): (text: string) => FragaSeed[] {

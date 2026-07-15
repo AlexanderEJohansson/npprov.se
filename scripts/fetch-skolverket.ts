@@ -89,6 +89,9 @@ const UU_GEO_KARTA: { year: number; url: string; filename: string }[] = [
   },
 ];
 
+/** Åk 9 2019 — lägg till när UU publicerar (sekretess förlängd till 2026-06-30, inga länkar än 2026-07-15) */
+const UU_GEO_2019: { year: number; a?: string; b?: string; bed?: string }[] = [];
+
 const UU_GEO_DELPROV: { year: number; a: string; b: string }[] = [
   {
     year: 2013,
@@ -251,6 +254,11 @@ async function main() {
     }
   }
   console.log('UU Geografi åk 6: done');
+  if (!UU_GEO_2019.length) {
+    console.log(
+      '⏳ GEO åk 9 2019: inga UU-URL:er konfigurerade än (kolla https://www.uu.se/nationella-prov/geografi/aldre-prov-och-bedomningsstod)'
+    );
+  }
   if (!geoOnly) await fetchManifestUrls();
 }
 

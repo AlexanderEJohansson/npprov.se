@@ -30,6 +30,7 @@
     "seed:km:geo": "npx tsx scripts/seed-kunskapsmal-geo.ts",
     "seed:geo": "npx tsx scripts/seed-geo-pdfs.ts",
     "reseed:geo:year": "npx tsx scripts/reseed-geo-year.ts",
+    "reseed:geo:ak6:year": "npx tsx scripts/reseed-geo-ak6-year.ts",
     "fix:geo": "npx tsx scripts/fix-geo-metadata.ts",
     "split:geo": "npx tsx scripts/split-geo-by-year.ts",
     "seed:geo:facit": "npx tsx scripts/seed-geo-facit.ts",

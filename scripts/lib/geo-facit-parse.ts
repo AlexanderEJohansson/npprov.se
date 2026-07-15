@@ -271,6 +271,9 @@ export const GEO_AK6_B_UPPGIFT_OFFSET: Record<number, number> = {
   2015: 11,
 };
 
+/** Åk 6 years where fraga_nummer already matches bedömnings-PDF uppgift id */
+export const GEO_AK6_DIRECT_UPPGIFT_YEARS = new Set([2013]);
+
 export function geoUppgiftId(
   year: number,
   delprov: 'A' | 'B',
@@ -279,6 +282,11 @@ export function geoUppgiftId(
   niva: 'ak9' | 'ak6' = 'ak9'
 ): number | null {
   const raw = String(localNum).trim();
+  if (niva === 'ak6' && GEO_AK6_DIRECT_UPPGIFT_YEARS.has(year)) {
+    const direct = Number.parseInt(raw, 10);
+    return Number.isFinite(direct) ? direct : null;
+  }
+
   const sub = raw.match(/^(\d+)([a-z])$/i);
   const offsetMap = niva === 'ak6' ? GEO_AK6_B_UPPGIFT_OFFSET : GEO_B_UPPGIFT_OFFSET;
 
