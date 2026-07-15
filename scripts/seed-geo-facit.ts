@@ -11,7 +11,11 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { PDFParse } from 'pdf-parse';
-import { parseGeoFacitEntries, facitMapFromEntries, geoUppgiftId } from './lib/geo-facit-parse';
+import {
+  parseGeoFacitEntries,
+  facitMapFromEntries,
+  facitForFraga,
+} from './lib/geo-facit-parse';
 
 const dryRun = process.argv.includes('--dry-run');
 const PROV_DIR = path.resolve('public/prov');
@@ -42,7 +46,8 @@ async function main() {
     }
 
     const text = await extractPdfText(bedPath);
-    const facitMap = facitMapFromEntries(parseGeoFacitEntries(text));
+    const entries = parseGeoFacitEntries(text);
+    const facitMap = facitMapFromEntries(entries);
     const keys = Object.keys(facitMap);
     if (!keys.length) {
       console.warn(`  ⚠ No facit in ${bedFile}`);
@@ -79,13 +84,20 @@ async function main() {
       const letter = /Delprov B/i.test(dp.beteckning) ? 'B' : 'A';
       const { data: fragor } = await supabase
         .from('fraga')
-        .select('id, fraga_nummer, korrekt_svar')
+        .select('id, fraga_nummer, text, korrekt_svar')
         .eq('delprov_id', dp.id);
 
       for (const f of fragor || []) {
-        const uppgiftId = geoUppgiftId(year, letter as 'A' | 'B', f.fraga_nummer, aCount);
-        if (!uppgiftId) continue;
-        const facit = facitMap[uppgiftId];
+        const facit = facitForFraga(
+          f.text || '',
+          f.fraga_nummer,
+          year,
+          letter as 'A' | 'B',
+          aCount,
+          facitMap,
+          entries,
+          text
+        );
         if (!facit || f.korrekt_svar === facit) continue;
         if (!dryRun) {
           await supabase.from('fraga').update({ korrekt_svar: facit.slice(0, 4000) }).eq('id', f.id);

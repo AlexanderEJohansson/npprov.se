@@ -7,45 +7,106 @@ export type GeoFacitEntry = {
   label?: string;
 };
 
+/** Delprov A: standalone letter → global uppgift (2017 kartuppgift) */
+const GEO_A_LETTER_UPPGIFT: Record<number, Record<string, number>> = {
+  2017: {
+    a: 13,
+    b: 13,
+    c: 13,
+    d: 13,
+    e: 13,
+    f: 1,
+    g: 1,
+    h: 1,
+    i: 1,
+    j: 1,
+    k: 1,
+    l: 1,
+    m: 1,
+  },
+};
+
+function isTocUppgiftBlock(block: string): boolean {
+  return /\.\.\.|^Uppgift\s+\d+\s*\.{3,}/m.test(block.slice(0, 120));
+}
+
+function trimModernFacit(raw: string): string {
+  let facit = raw
+    .replace(/^\.?\s*(?:Progressionen|Belägg för)[^.]*\.?\s*/i, '')
+    .replace(/^\d+-\d+\s+rätta\s+svar\.?\s*/gi, '')
+    .replace(/^Rätta\s+svar\s*/i, '')
+    .replace(/^Korrekta\s+svar\s*/i, '')
+    .replace(/^\s*Max\s+antal[^.]*\.?\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const end = facit.search(
+    /\bMax\s+antal\s+(?:rätta|rätta\s+svar|korrekta)\b|\bBEDÖMNINGSANVISNINGAR\b|\bUppgift\s+\d{1,2}\b/i
+  );
+  if (end > 8) facit = facit.slice(0, end).trim();
+
+  return facit;
+}
+
+function isUsefulFacit(facit: string): boolean {
+  if (facit.length < 8) return false;
+  if (/^Bedömningskriterier:\s*•\s*I vilken utsträckning/i.test(facit) && facit.length < 120) {
+    return false;
+  }
+  if (/^\.?\s*Progressionen/i.test(facit) && !/\ba\)|\bX\b|Sant\s+Falskt|Stämmer/i.test(facit)) {
+    return false;
+  }
+  return true;
+}
+
+function bedomningsGuidanceFromBlock(block: string): string | undefined {
+  const parts: string[] = [];
+  const aspekt = block.match(
+    /Bedömningsaspekter[^]*?(?=Belägg för|Exempel på|Progression|Rätta svar|Uppgift\s+\d|$)/i
+  );
+  if (aspekt?.[0]) parts.push(aspekt[0].replace(/\s+/g, ' ').trim().slice(0, 600));
+
+  const relevant = block.match(
+    /Relevanta\s+(?:konsekvenser|argument|förklaringar)[^.]*\.([\s\S]*?)(?=Uppgift\s+\d|Bedömnings|$)/i
+  );
+  if (relevant?.[0]) parts.push(relevant[0].replace(/\s+/g, ' ').trim().slice(0, 600));
+
+  if (!parts.length) return undefined;
+  return parts.join(' ').slice(0, 900);
+}
+
 /** Parse UU bedömningsanvisningar 2016+ (Rätta svar + Uppgift N Formulering) */
 function parseGeoFacitModern(text: string): GeoFacitEntry[] {
   const clean = sanitizePdfText(text);
-  const entries: GeoFacitEntry[] = [];
+  const byUppgift = new Map<number, GeoFacitEntry>();
   const blocks = clean.split(/(?=Uppgift\s+\d{1,2}\b)/i).filter((b) => /Uppgift\s+\d/i.test(b));
 
   for (const block of blocks) {
+    if (isTocUppgiftBlock(block)) continue;
+
     const head = block.match(/^Uppgift\s+(\d{1,2})\b/i);
     if (!head) continue;
     const uppgift = Number(head[1]);
+    if (byUppgift.has(uppgift)) continue;
 
     const rattaIdx = block.search(/Rätta svar/i);
     let facit = '';
     if (rattaIdx >= 0) {
-      const slice = block.slice(rattaIdx);
-      const end = slice.search(/Max antal|BEFOLKNINGS|^[A-ZÅÄÖ][A-ZÅÄÖ\s\-]{4,}/m);
-      facit = slice
-        .slice(0, end > 0 ? end : 1200)
-        .replace(/Rätta svar\s*/i, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+      facit = trimModernFacit(block.slice(rattaIdx));
     }
 
-    const aspektMatch = block.match(
-      /Aspekter som ska bedömas\s*([\s\S]*?)(?=Progressionen|Belägg|Rätta svar|Uppgift|$)/i
-    );
-    const bedomningskriterier = aspektMatch?.[1]?.replace(/\s+/g, ' ').trim();
-
-    const value = facit || bedomningskriterier;
+    const bedomningskriterier = bedomningsGuidanceFromBlock(block);
+    const value = isUsefulFacit(facit) ? facit : bedomningskriterier;
     if (!value || value.length < 8) continue;
 
-    entries.push({
+    byUppgift.set(uppgift, {
       uppgift,
-      facit: facit || `Bedömningskriterier: ${bedomningskriterier?.slice(0, 500)}`,
+      facit: isUsefulFacit(facit) ? facit : `Bedömningskriterier: ${bedomningskriterier?.slice(0, 700)}`,
       bedomningskriterier,
     });
   }
 
-  return entries;
+  return [...byUppgift.values()].sort((a, b) => a.uppgift - b.uppgift);
 }
 
 const KORREKTA_SVAR_HEADING = /(?:^|[\n\r])Korrekta svar(?!\s+på\b)/gi;
@@ -152,7 +213,6 @@ function parseGeoFacitLegacy(text: string): GeoFacitEntry[] {
     }
   }
 
-  // Inline facit utan rubrik "Korrekta svar" (t.ex. a) Tullunion b) Ekvatorn)
   const inlineBlocks = clean.split(/(?=Uppgift\s+\d{1,2}(?:\s|\.))/i);
   for (const block of inlineBlocks) {
     const head = block.match(/^Uppgift\s+(\d{1,2})[a-z]?\s*[\.\s]/i);
@@ -181,9 +241,17 @@ function parseGeoFacitLegacy(text: string): GeoFacitEntry[] {
 
 export function parseGeoFacitEntries(text: string): GeoFacitEntry[] {
   const modern = parseGeoFacitModern(text);
-  if (modern.length >= 3) return modern;
   const legacy = parseGeoFacitLegacy(text);
-  return legacy.length > modern.length ? legacy : modern;
+  const merged = new Map<number, GeoFacitEntry>();
+
+  for (const e of [...legacy, ...modern]) {
+    const prev = merged.get(e.uppgift);
+    const score = (x: GeoFacitEntry) =>
+      (/\ba\)|\bX\b|Sant\s+Falskt|Stämmer|= \d/i.test(x.facit) ? 2 : 0) + x.facit.length / 1000;
+    if (!prev || score(e) > score(prev)) merged.set(e.uppgift, e);
+  }
+
+  return [...merged.values()].sort((a, b) => a.uppgift - b.uppgift);
 }
 
 /** Per-year offset: first Uppgift id in Delprov B bedömnings-PDF */
@@ -199,18 +267,141 @@ export const GEO_B_UPPGIFT_OFFSET: Record<number, number> = {
 export function geoUppgiftId(
   year: number,
   delprov: 'A' | 'B',
-  localNum: number,
+  localNum: string | number,
   aCount: number
 ): number | null {
-  const local = Number.parseInt(String(localNum), 10);
-  if (!Number.isFinite(local)) {
-    const letter = String(localNum).match(/^(\d+)?([a-z])$/i);
-    if (letter?.[2]) return null;
-    return null;
+  const raw = String(localNum).trim();
+  const sub = raw.match(/^(\d+)([a-z])$/i);
+  if (sub) {
+    const parent = Number(sub[1]);
+    if (delprov === 'A') return parent;
+    const offset = GEO_B_UPPGIFT_OFFSET[year] ?? aCount + 1;
+    return parent + offset - 1;
   }
+
+  const letterOnly = raw.match(/^([a-z])$/i);
+  if (letterOnly && delprov === 'A') {
+    return GEO_A_LETTER_UPPGIFT[year]?.[letterOnly[1].toLowerCase()] ?? null;
+  }
+
+  const local = Number.parseInt(raw, 10);
+  if (!Number.isFinite(local)) return null;
   if (delprov === 'A') return local;
   const offset = GEO_B_UPPGIFT_OFFSET[year] ?? aCount + 1;
   return local + offset - 1;
+}
+
+/** Pull a) b) c) answer from combined facit block */
+export function extractSubFacit(facit: string, fragaNummer: string): string | null {
+  const sub = String(fragaNummer).match(/^(\d+)?([a-z])$/i);
+  if (!sub?.[2]) return facit;
+
+  const letter = sub[2].toLowerCase();
+  const patterns = [
+    new RegExp(`\\b${letter}\\)\\s*[^a-z\\)]{4,}`, 'i'),
+    new RegExp(`\\b${letter}\\s*\\)\\s*[^a-z\\)]{4,}`, 'i'),
+  ];
+
+  for (const re of patterns) {
+    const m = facit.match(re);
+    if (m) return m[0].replace(/\s+/g, ' ').trim();
+  }
+
+  return facit;
+}
+
+function normalizeTheme(s: string): string {
+  return s
+    .toUpperCase()
+    .replace(/[^A-ZÅÄÖ0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function guidanceSearchTerms(fragaText: string): string[] {
+  const title = fragaText.match(/^([^:(]+)/)?.[1]?.trim() || '';
+  const terms: string[] = [];
+
+  if (title.length > 5 && !/^(?:[A-Z]\s*){1,4}$/.test(title)) {
+    terms.push(title);
+    terms.push(title.split(/\s+/).slice(0, 2).join(' '));
+  }
+  if (/BNP|diagrammet|Maja|Ali/i.test(fragaText)) {
+    terms.push('BNP per capita', 'diagrammet', 'Maja kan använda');
+  }
+  if (/Ganges|floder/i.test(fragaText)) terms.push('Ganges', 'tätbefolkade');
+  if (/slaveri/i.test(fragaText)) terms.push('slaveri', 'Uppgift 30');
+  if (/Klimatdiagram|monsun/i.test(fragaText)) terms.push('Klimatdiagram', 'monsun');
+
+  return [...new Set(terms)];
+}
+
+/** Open-ended questions: extract progression/bedömningsaspekter from raw bedömnings-PDF */
+export function guidanceFromBedText(bedText: string, fragaText: string): string | null {
+  const clean = sanitizePdfText(bedText);
+  const patterns = guidanceSearchTerms(fragaText)
+    .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .filter((p) => p.length > 4);
+
+  for (const pat of patterns) {
+    const idx = clean.search(new RegExp(pat, 'i'));
+    if (idx < 0) continue;
+
+    const slice = clean.slice(Math.max(0, idx - 250), idx + 2200);
+    if (/☐|resultatrapport/i.test(slice.slice(0, 180))) continue;
+
+    const prog = slice.match(
+      /(?:Belägg för|Beskrivning av progressionen)[^]+?(?=Uppgift\s+\d|Delprov [AB]\b|$)/i
+    );
+    if (prog?.[0] && prog[0].length > 50) {
+      return `Bedömningskriterier: ${prog[0].replace(/\s+/g, ' ').slice(0, 900)}`;
+    }
+
+    const guidance = bedomningsGuidanceFromBlock(slice);
+    if (guidance) return `Bedömningskriterier: ${guidance}`;
+  }
+
+  return null;
+}
+
+/** Match facit by question title when numeric mapping fails (e.g. 2014 B Nordostpassagen → uppgift 27) */
+export function facitForFraga(
+  fragaText: string,
+  fragaNummer: string,
+  year: number,
+  delprov: 'A' | 'B',
+  aCount: number,
+  facitMap: Record<number, string>,
+  entries: GeoFacitEntry[],
+  bedText?: string
+): string | null {
+  const uppgiftId = geoUppgiftId(year, delprov, fragaNummer, aCount);
+  if (uppgiftId && facitMap[uppgiftId]) {
+    return extractSubFacit(facitMap[uppgiftId], fragaNummer);
+  }
+
+  const title = fragaText.match(/^([^:(]+)/)?.[1]?.trim();
+  if (!title || title.length < 5) {
+    return bedText ? guidanceFromBedText(bedText, fragaText) : null;
+  }
+  const theme = normalizeTheme(title);
+
+  for (const e of entries) {
+    const facitNorm = normalizeTheme(e.facit);
+    if (facitNorm.includes(theme) || theme.includes(normalizeTheme(e.facit.slice(0, 30)))) {
+      return extractSubFacit(e.facit, fragaNummer);
+    }
+    if (/NORDOST/i.test(theme) && /NORDOSTPASSAGEN/i.test(e.facit)) {
+      return extractSubFacit(e.facit, fragaNummer);
+    }
+  }
+
+  if (bedText) {
+    const guidance = guidanceFromBedText(bedText, fragaText);
+    if (guidance) return guidance;
+  }
+
+  return null;
 }
 
 export function facitMapFromEntries(entries: GeoFacitEntry[]): Record<number, string> {
