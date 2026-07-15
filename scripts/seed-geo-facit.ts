@@ -11,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { PDFParse } from 'pdf-parse';
-import { parseGeoFacitEntries, facitMapFromEntries } from './lib/geo-facit-parse';
+import { parseGeoFacitEntries, facitMapFromEntries, geoUppgiftId } from './lib/geo-facit-parse';
 
 const dryRun = process.argv.includes('--dry-run');
 const PROV_DIR = path.resolve('public/prov');
@@ -27,19 +27,6 @@ async function extractPdfText(filePath: string): Promise<string> {
   const result = await parser.getText();
   await parser.destroy();
   return result.text;
-}
-
-function uppgiftForFraga(
-  year: number,
-  delprovLetter: 'A' | 'B',
-  fragaNummer: string,
-  aCount: number
-): number | null {
-  const local = Number.parseInt(fragaNummer, 10);
-  if (!Number.isFinite(local)) return null;
-  if (delprovLetter === 'A') return local;
-  if (year === 2016) return local + 17;
-  return local + aCount;
 }
 
 async function main() {
@@ -96,7 +83,7 @@ async function main() {
         .eq('delprov_id', dp.id);
 
       for (const f of fragor || []) {
-        const uppgiftId = uppgiftForFraga(year, letter as 'A' | 'B', f.fraga_nummer, aCount);
+        const uppgiftId = geoUppgiftId(year, letter as 'A' | 'B', f.fraga_nummer, aCount);
         if (!uppgiftId) continue;
         const facit = facitMap[uppgiftId];
         if (!facit || f.korrekt_svar === facit) continue;
