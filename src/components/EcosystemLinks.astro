@@ -35,7 +35,7 @@ const props: EcosystemLinkProps = {
 const monstret = npmonstretLink(props);
 const guide = npguideUrl(props);
 
-if (!monstret && !guide) return null;
+if (!monstret && !guide && context !== 'prov') return null;
 
 const wrapperClass =
   variant === 'box'
@@ -59,6 +59,19 @@ const wrapperClass =
         {npguideLabel(guide)}
       </a>
       {context === 'prov' ? ' finns på NP-guide.' : ' — se NP-guide.'}
+    </p>
+  )}
+  {context === 'prov' && (
+    <p class={variant === 'inline' ? 'text-slate-500 text-sm' : ''}>
+      <a
+        href="https://npguide.se/skolpersonal/provvakt"
+        target="_blank"
+        rel="noopener"
+        class="underline text-teal-800"
+      >
+        Guide för provvakt och ordning i sal
+      </a>
+      {' '}på NP-guide.
     </p>
   )}
 </div>
