@@ -272,7 +272,7 @@ export const GEO_AK6_B_UPPGIFT_OFFSET: Record<number, number> = {
 };
 
 /** Åk 6 years where fraga_nummer already matches bedömnings-PDF uppgift id */
-export const GEO_AK6_DIRECT_UPPGIFT_YEARS = new Set([2013]);
+export const GEO_AK6_DIRECT_UPPGIFT_YEARS = new Set([2013, 2017]);
 
 /** Åk 6: parser-junk eller icke-sekventiell numrering → explicit bedömnings-uppgift */
 export const GEO_AK6_FACIT_OVERRIDES: Partial<
@@ -379,6 +379,15 @@ function guidanceSearchTerms(fragaText: string): string[] {
   if (/Ganges|floder/i.test(fragaText)) terms.push('Ganges', 'tätbefolkade');
   if (/slaveri/i.test(fragaText)) terms.push('slaveri', 'Uppgift 30');
   if (/Klimatdiagram|monsun/i.test(fragaText)) terms.push('Klimatdiagram', 'monsun');
+  if (/medellivslängd|barnadödlighet|tabellerna/i.test(fragaText)) {
+    terms.push('medellivslängden', 'barnadödligheten', 'Världen blir bättre');
+  }
+  if (/beskrivning passar till begreppen|Geografiska begrepp/i.test(fragaText)) {
+    terms.push('Geografiska begrepp', 'begrepp som behövs');
+  }
+  if (/Studera kartan och diagrammen|påståendena/i.test(fragaText)) {
+    terms.push('påståendena', 'diagrammen', 'kartan och diagrammen');
+  }
   if (/Surtsey|JORDYTAN|platt/i.test(fragaText)) terms.push('Surtsey', 'uppkomsten av Surtsey');
   if (/översvämning|Kraftiga regn/i.test(fragaText)) terms.push('översvämning', 'relevant orsak');
   if (/JORDEN SEDD|ovanifrån|satellitbild/i.test(fragaText)) {

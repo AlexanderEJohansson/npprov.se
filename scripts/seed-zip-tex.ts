@@ -131,7 +131,7 @@ async function upsertFraga(
     varfor_viktig: sanitizeDbText(seed.varfor_viktig),
     max_poang: seed.max_poang,
     kalla: sanitizeDbText(seed.kalla),
-    human_reviewed: true,
+    human_reviewed: false,
   };
 
   const { data: existing } = await supabase

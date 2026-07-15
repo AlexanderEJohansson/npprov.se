@@ -106,6 +106,29 @@ const SU_MA_AK9_2016_BED: { url: string; filename: string }[] = [
     url: 'https://www.su.se/download/18.2b7477cb199a332c2a824be/1759930364602/%C3%A4p9%202016%20Delprov%20B%C3%84P%209%202016%20Ma%20Delprov%20B.pdf',
     filename: 'ma-ak9-2016-delprov-b.pdf',
   },
+  {
+    url: 'https://www.su.se/download/18.2b7477cb199a332c2a824bf/1759930364811/%C3%A4p9%202016%20Delprov%20C%C3%84P%209%202016%20Ma%20Delprov%20C.pdf',
+    filename: 'ma-ak9-2016-delprov-c.pdf',
+  },
+  {
+    url: 'https://www.su.se/download/18.2b7477cb199a332c2a824c0/1759930364987/%C3%A4p9%202016%20Delprov%20D%C3%84P%209%202016%20Ma%20Delprov%20D.pdf',
+    filename: 'ma-ak9-2016-delprov-d.pdf',
+  },
+];
+
+const GU_EN_AK9_OVERVIEW: { url: string; filename: string }[] = [
+  {
+    url: 'https://www.gu.se/sites/default/files/2025-10/%C3%85k9_%C3%96versikt_dpA.pdf',
+    filename: 'en-ak9-oversikt-dp-a.pdf',
+  },
+  {
+    url: 'https://www.gu.se/sites/default/files/2022-08/%C3%85k9_%C3%96versikt_dpB.pdf',
+    filename: 'en-ak9-oversikt-dp-b.pdf',
+  },
+  {
+    url: 'https://www.gu.se/sites/default/files/2026-02/%C3%85k9_%C3%96versikt_dpC.pdf',
+    filename: 'en-ak9-oversikt-dp-c.pdf',
+  },
 ];
 
 /** Biologi åk 9 vt17 = läsår 2016/2017 */
@@ -319,7 +342,12 @@ async function main() {
     if (await download(url, dest) && (dryRun || fs.existsSync(dest))) console.log(`  📐 ${filename}`);
   }
   console.log('SU Ma åk 9 2016 bedömning: done');
-  for (const item of [UMU_BIO_VT17_BED, UU_SV_BED, UU_EN_A]) {
+  for (const item of GU_EN_AK9_OVERVIEW) {
+    const dest = path.join(DEST, item.filename);
+    if (await download(item.url, dest) && (dryRun || fs.existsSync(dest))) console.log(`  🇬🇧 ${item.filename}`);
+  }
+  console.log('GU Engelska åk 9 översikt: done');
+  for (const item of [UMU_BIO_VT17_BED, UU_SV_BED]) {
     const dest = path.join(DEST, item.filename);
     if (await download(item.url, dest) && (dryRun || fs.existsSync(dest))) console.log(`  📋 ${item.filename}`);
   }

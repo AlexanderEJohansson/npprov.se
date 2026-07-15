@@ -30,6 +30,7 @@ import {
   parseTexCodeFacit,
   parseSvBedömningsunderlag,
   parseNoBioFacit,
+  parseDelprovOverviewFacit,
   mergeFacitMaps,
 } from './lib/zip-facit-parse';
 
@@ -42,6 +43,13 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+type DelprovPdf = {
+  file: string;
+  beteckning: string;
+  maxQ: number;
+  ordning: number;
+};
+
 type ZipTarget = {
   slug: string;
   zipFile: string;
@@ -49,6 +57,7 @@ type ZipTarget = {
   texCodes?: string[];
   splitMaB1?: boolean;
   delprovPdf?: string;
+  delprovPdfs?: DelprovPdf[];
 };
 
 const TARGETS: ZipTarget[] = [
@@ -57,8 +66,11 @@ const TARGETS: ZipTarget[] = [
     zipFile: 'Matematik_ak9_2016-2017.zip',
     bedPdfs: ['ma-ak9-2016-bedomningsanvisningar-1.pdf', 'ma-ak9-2016-bedomningsanvisningar-2.pdf'],
     texCodes: ['90598', '90599', '90600'],
-    splitMaB1: true,
-    delprovPdf: 'ma-ak9-2016-delprov-b.pdf',
+    delprovPdfs: [
+      { file: 'ma-ak9-2016-delprov-b.pdf', beteckning: 'Delprov B', maxQ: 22, ordning: 2 },
+      { file: 'ma-ak9-2016-delprov-c.pdf', beteckning: 'Delprov C', maxQ: 25, ordning: 3 },
+      { file: 'ma-ak9-2016-delprov-d.pdf', beteckning: 'Delprov D', maxQ: 31, ordning: 4 },
+    ],
   },
   {
     slug: '3fe9289485',
@@ -75,7 +87,11 @@ const TARGETS: ZipTarget[] = [
   {
     slug: 'c2867e6e93',
     zipFile: 'Engelska_ak9_2016-2017.zip',
-    bedPdfs: ['en-ak9-delprov-a-exempel.pdf'],
+    bedPdfs: [
+      'en-ak9-oversikt-dp-a.pdf',
+      'en-ak9-oversikt-dp-b.pdf',
+      'en-ak9-oversikt-dp-c.pdf',
+    ],
     texCodes: ['90589', '90590', '90591', '90592', '90593'],
   },
 ];
@@ -100,19 +116,19 @@ function extractDocxFromZip(zipPath: string, code: string): string {
   }
 }
 
-async function seedMaFromSuDelprov(provId: string, pdfName: string): Promise<number> {
-  const pdfPath = path.join(PROV_DIR, pdfName);
+async function seedMaFromSuDelprov(provId: string, spec: DelprovPdf): Promise<number> {
+  const pdfPath = path.join(PROV_DIR, spec.file);
   if (!fs.existsSync(pdfPath)) return 0;
 
   const text = await extractPdfText(pdfPath);
-  const questions = extractQuestionBodies(text, 22, 1);
-  if (questions.length < 5) return 0;
+  const questions = extractQuestionBodies(text, spec.maxQ, 1);
+  if (questions.length < 3) return 0;
 
-  const seeds = questionsToSeeds(questions, { level: 'Matematik åk 9', delprov: 'Delprov B' });
-  const beteckning = 'Delprov B';
+  const seeds = questionsToSeeds(questions, { level: 'Matematik åk 9', delprov: spec.beteckning });
+  const beteckning = spec.beteckning;
 
   if (dryRun) {
-    console.log(`  🧪 Would seed ${seeds.length} frågor from ${pdfName}`);
+    console.log(`  🧪 Would seed ${seeds.length} frågor from ${spec.file}`);
     return seeds.length;
   }
 
@@ -135,7 +151,7 @@ async function seedMaFromSuDelprov(provId: string, pdfName: string): Promise<num
   } else {
     const { data: created } = await supabase
       .from('delprov')
-      .insert({ prov_id: provId, beteckning, titel: beteckning, ordning: 2 })
+        .insert({ prov_id: provId, beteckning, titel: beteckning, ordning: spec.ordning })
       .select('id')
       .single();
     delprovId = created!.id;
@@ -151,11 +167,11 @@ async function seedMaFromSuDelprov(provId: string, pdfName: string): Promise<num
       vanliga_missforstand: seed.vanliga_missforstand,
       varfor_viktig: seed.varfor_viktig,
       max_poang: seed.max_poang,
-      kalla: 'Stockholms universitet (äp9 2016 Delprov B)',
+      kalla: `Stockholms universitet (äp9 2016 ${spec.beteckning})`,
       human_reviewed: false,
     });
   }
-  console.log(`  ↔ ${pdfName} → ${seeds.length} frågor (Delprov B)`);
+  console.log(`  ↔ ${spec.file} → ${seeds.length} frågor (${beteckning})`);
   return seeds.length;
 }
 
@@ -225,10 +241,12 @@ async function applyFacit(provId: string, facitMap: Record<string, string>, subj
   for (const f of fragor || []) {
     const num = String(f.fraga_nummer).trim();
     const localNum = num.match(/^[A-D](\d{1,2})$/i)?.[1];
+    const letter = num.match(/^([A-D])/i)?.[1]?.toUpperCase();
     const facit =
       facitMap[num] ||
       facitMap[num.toUpperCase()] ||
       (localNum ? facitMap[localNum] : null) ||
+      (letter ? facitMap[`DELPROV_${letter}`] : null) ||
       null;
     if (!facit || f.korrekt_svar === facit) continue;
 
@@ -258,8 +276,16 @@ async function seedTarget(target: ZipTarget): Promise<number> {
 
   console.log(`\n→ ${target.slug} (${prov.amne})`);
 
-  if (target.delprovPdf) await seedMaFromSuDelprov(prov.id, target.delprovPdf);
-  else if (target.splitMaB1) await splitMaDelprovB(prov.id);
+  if (target.delprovPdfs?.length) {
+    for (const spec of target.delprovPdfs) await seedMaFromSuDelprov(prov.id, spec);
+  } else if (target.delprovPdf) {
+    await seedMaFromSuDelprov(prov.id, {
+      file: target.delprovPdf,
+      beteckning: 'Delprov B',
+      maxQ: 22,
+      ordning: 2,
+    });
+  } else if (target.splitMaB1) await splitMaDelprovB(prov.id);
 
   const facitMap: Record<string, string> = {};
 
@@ -278,6 +304,8 @@ async function seedTarget(target: ZipTarget): Promise<number> {
       for (const [k, v] of Object.entries(facitMapFromEntries(entries))) facitMap[String(k)] = v;
     } else if (prov.amne === 'Svenska') {
       Object.assign(facitMap, parseSvBedömningsunderlag(text));
+    } else if (prov.amne === 'Engelska') {
+      Object.assign(facitMap, parseDelprovOverviewFacit(text));
     } else {
       Object.assign(facitMap, parseBedömningskriterierBlock(text));
     }

@@ -94,6 +94,26 @@ export function parseNoBioFacit(text: string): Record<string, string> {
   return facit;
 }
 
+/** GU/SU översikt-PDF: bedömningskriterier per delprov */
+export function parseDelprovOverviewFacit(text: string): Record<string, string> {
+  const facit: Record<string, string> = {};
+  const clean = text.replace(/\s+/g, ' ');
+
+  for (const m of clean.matchAll(
+    /Delprov\s+([A-D])[^]{0,80}?(?:Bedömningskriterier|Assessment criteria|Criteria)\s*[:\-]?\s*([^]+?)(?=Delprov\s+[A-D]|$)/gi
+  )) {
+    const body = m[2].trim().slice(0, 1200);
+    if (body.length > 20) facit[`DELPROV_${m[1].toUpperCase()}`] = body;
+  }
+
+  if (!Object.keys(facit).length && clean.length > 80) {
+    const letter = clean.match(/Delprov\s+([A-D])/i)?.[1];
+    if (letter) facit[`DELPROV_${letter.toUpperCase()}`] = clean.slice(0, 1200);
+  }
+
+  return facit;
+}
+
 export function mergeFacitMaps(...maps: Record<string, string>[]): Record<string, string> {
   return Object.assign({}, ...maps);
 }

@@ -41,6 +41,7 @@
     "seed:zip:tex": "npx tsx scripts/seed-zip-tex.ts",
     "seed:zip:facit": "npx tsx scripts/seed-zip-facit.ts",
     "cleanup:geo:junk": "npx tsx scripts/cleanup-geo-junk.ts",
+    "fix:human-reviewed": "npx tsx scripts/fix-human-reviewed.ts",
     "seed:tier2": "npx tsx scripts/seed-tier2-pdf.ts",
     "deploy": "npx vercel --prod",
     "deploy:preview": "npx vercel"

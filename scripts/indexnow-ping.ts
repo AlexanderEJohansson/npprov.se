@@ -28,15 +28,20 @@ async function collectUrls(): Promise<string[]> {
     for (const p of provs || []) {
       if (p.slug) urls.push(`${SITE}/prov/${p.slug}`);
     }
-    const { data: fragor } = await supabase
-      .from('fraga')
-      .select('id, delprov:delprov_id(prov:prov_id(slug, amne))')
-      .limit(500);
-    for (const f of fragor || []) {
-      const slug = f.delprov?.prov?.slug;
-      if (slug && f.delprov?.prov?.amne === 'Geografi') {
-        urls.push(`${SITE}/prov/${slug}/fraga/${f.id}`);
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data: fragor } = await supabase
+        .from('fraga')
+        .select('id, delprov:delprov_id(prov:prov_id(slug, amne))')
+        .range(offset, offset + pageSize - 1);
+      if (!fragor?.length) break;
+      for (const f of fragor) {
+        const slug = f.delprov?.prov?.slug;
+        if (slug && f.delprov?.prov?.amne === 'Geografi') {
+          urls.push(`${SITE}/prov/${slug}/fraga/${f.id}`);
+        }
       }
+      if (fragor.length < pageSize) break;
     }
   } else {
     const { data: provs } = await supabase.from('prov').select('slug').limit(120);
