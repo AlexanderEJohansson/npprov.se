@@ -136,21 +136,80 @@ export function expandLetteredSubQuestions(seed: FragaSeed, year: number, delpro
   }));
 }
 
-/** 2013 Delprov A — numbered blocks after header junk */
+/** 2013 Delprov A — UU PDF uses page numbers + thematic titles (not 2016-style ALL CAPS blocks) */
+const GEO_2013_A_MARKERS: { num: string; title: string; re: RegExp }[] = [
+  { num: '1', title: 'Var ligger platserna', re: /Var ligger platserna\?/ },
+  { num: '2', title: 'Att visa befolkningsutveckling', re: /Att visa befolkningsutveckling/ },
+  { num: '3', title: 'BNP per capita och medellivslängd', re: /BNP per capita och medellivslängd/ },
+  {
+    num: '4',
+    title: 'BNP-diagram och resonemang',
+    re: /Eleverna i en klass ska redovisa ett arbete om olika faktorer/,
+  },
+  {
+    num: '5',
+    title: 'Klimat',
+    re: /5\s+a\)\s+Vad kallas de olika klimatzonerna/,
+  },
+  { num: '6', title: 'Klimatförändringar', re: /Klimatförändringar/ },
+  { num: '7', title: 'Jordens gradnät', re: /Jordens gradnät/ },
+  { num: '8', title: 'Naturresurser', re: /Naturresurser/ },
+  {
+    num: '9',
+    title: 'Vindkraft',
+    re: /9\s+Skriv ett svar till Maria|Nej till nya vindkraftverk!/,
+  },
+  { num: '10', title: 'Tillgång till rent vatten', re: /Tillgång till rent vatten/ },
+  {
+    num: '11',
+    title: 'Vatten, hälsa och utveckling',
+    re: /11\s+Förklara på vilka olika sätt tillgång till rent vatten/,
+  },
+  { num: '12', title: 'Nya produktionsmönster', re: /Nya produktionsmönster/ },
+  {
+    num: '13',
+    title: 'Migration',
+    re: /13\s+Vilka olika orsaker finns till att människor/,
+  },
+  { num: '14', title: 'Namn, läge och storlek', re: /Namn, läge och storlek/ },
+];
+
 export function parseGeografiDelprovA2013(text: string): FragaSeed[] {
   const clean = sanitizePdfText(text);
-  const seeds: FragaSeed[] = [];
-  const re = /(?:^|\s)(\d{1,2})\s+([A-ZÅÄÖ][^\d]{8,80}?)(?=\s+\d{1,2}\s+[A-ZÅÄÖ]|$)/g;
-  const hits = [...clean.matchAll(re)];
+  const hits: { num: string; title: string; index: number }[] = [];
 
+  for (const m of GEO_2013_A_MARKERS) {
+    const match = m.re.exec(clean);
+    if (!match) continue;
+    const idx = match.index ?? 0;
+    if (hits.some((h) => h.num === m.num)) continue;
+    if (m.num === '3') {
+      // Second "BNP per capita…" header belongs to uppgift 4, not 3
+      const first = idx;
+      const second = clean.indexOf('BNP per capita och medellivslängd', first + 1);
+      if (second > 0 && second < (clean.search(/5\s+a\)\s+Vad kallas/) || clean.length)) {
+        hits.push({ num: m.num, title: m.title, index: first });
+        continue;
+      }
+    }
+    hits.push({ num: m.num, title: m.title, index: idx });
+  }
+
+  hits.sort((a, b) => a.index - b.index);
+  if (!hits.length) return [];
+
+  const seeds: FragaSeed[] = [];
   for (let i = 0; i < hits.length; i++) {
-    const num = hits[i][1];
-    const title = hits[i][2].replace(/\s+/g, ' ').trim();
-    if (/årskurs|ämnetsprov|elevens namn|sekretess/i.test(title)) continue;
-    const start = (hits[i].index ?? 0) + hits[i][0].length;
-    const end = i + 1 < hits.length ? hits[i + 1].index! : clean.length;
-    const body = clean.slice(start, end).replace(/\s+/g, ' ').trim();
-    if (body.length < 40) continue;
+    const { num, title, index } = hits[i];
+    const end = i + 1 < hits.length ? hits[i + 1].index : clean.length;
+    const body = clean
+      .slice(index, end)
+      .replace(/©\s*\d{4}[^]+?(?=\d|$)/gi, ' ')
+      .replace(/!{2,}/g, ' ')
+      .replace(/_{5,}/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (body.length < 50) continue;
 
     const base: FragaSeed = {
       fraga_nummer: num,
@@ -161,7 +220,8 @@ export function parseGeografiDelprovA2013(text: string): FragaSeed[] {
       max_poang: inferTyp(body) === 'lang_svar' ? 4 : 2,
       kalla: 'Uppsala universitet (Geografi åk 9, 2013 Delprov A)',
     };
-    seeds.push(...expandLetteredSubQuestions(base, 2013, 'A'));
+    const expanded = expandLetteredSubQuestions(base, 2013, 'A');
+    seeds.push(...expanded);
   }
   return seeds;
 }
