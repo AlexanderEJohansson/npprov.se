@@ -274,6 +274,23 @@ export const GEO_AK6_B_UPPGIFT_OFFSET: Record<number, number> = {
 /** Åk 6 years where fraga_nummer already matches bedömnings-PDF uppgift id */
 export const GEO_AK6_DIRECT_UPPGIFT_YEARS = new Set([2013]);
 
+/** Åk 6: parser-junk eller icke-sekventiell numrering → explicit bedömnings-uppgift */
+export const GEO_AK6_FACIT_OVERRIDES: Partial<
+  Record<number, Partial<Record<'A' | 'B', Record<string, number>>>>
+> = {
+  2014: { A: { '2': 7 } }, // JORDYTAN/Surtsey (parsad som kartfragment)
+  2015: { B: { '1': 9, '3': 15, '12': 27 } },
+};
+
+export function ak6FacitOverride(
+  year: number,
+  delprov: 'A' | 'B',
+  fragaNummer: string
+): number | null {
+  const n = GEO_AK6_FACIT_OVERRIDES[year]?.[delprov]?.[String(fragaNummer).trim()];
+  return n ?? null;
+}
+
 export function geoUppgiftId(
   year: number,
   delprov: 'A' | 'B',
@@ -362,6 +379,11 @@ function guidanceSearchTerms(fragaText: string): string[] {
   if (/Ganges|floder/i.test(fragaText)) terms.push('Ganges', 'tätbefolkade');
   if (/slaveri/i.test(fragaText)) terms.push('slaveri', 'Uppgift 30');
   if (/Klimatdiagram|monsun/i.test(fragaText)) terms.push('Klimatdiagram', 'monsun');
+  if (/Surtsey|JORDYTAN|platt/i.test(fragaText)) terms.push('Surtsey', 'uppkomsten av Surtsey');
+  if (/översvämning|Kraftiga regn/i.test(fragaText)) terms.push('översvämning', 'relevant orsak');
+  if (/JORDEN SEDD|ovanifrån|satellitbild/i.test(fragaText)) {
+    terms.push('satellit', 'flyg', 'ovanifrån');
+  }
 
   return [...new Set(terms)];
 }
@@ -406,7 +428,8 @@ export function facitForFraga(
   bedText?: string,
   niva: 'ak9' | 'ak6' = 'ak9'
 ): string | null {
-  const uppgiftId = geoUppgiftId(year, delprov, fragaNummer, aCount, niva);
+  const overrideId = niva === 'ak6' ? ak6FacitOverride(year, delprov, fragaNummer) : null;
+  const uppgiftId = overrideId ?? geoUppgiftId(year, delprov, fragaNummer, aCount, niva);
   if (uppgiftId && facitMap[uppgiftId]) {
     return extractSubFacit(facitMap[uppgiftId], fragaNummer);
   }

@@ -258,6 +258,8 @@ export function geoKunskapsmalForText(text: string): string {
 const JUNK_THEMES = new Set([
   'JA NEJ', 'GEOGRAFI', 'E C A E C A E C A E C A', 'J F M A M J J A S O N D',
   'KVINNOR MÄN', 'SANT FALSKT', 'DELPROV', 'ÅRSKURS',
+  'ARABISKA PLATTAN EURASISKA PLATTAN', 'A B C D', 'A T L A N T E N',
+  'B D E A C', 'S V Ö', 'E C A E C A E C A E C A',
 ]);
 
 /** Older UU PDFs (2013–2015) — numbered thematic blocks */
