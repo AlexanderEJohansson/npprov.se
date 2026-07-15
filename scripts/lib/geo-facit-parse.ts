@@ -254,7 +254,7 @@ export function parseGeoFacitEntries(text: string): GeoFacitEntry[] {
   return [...merged.values()].sort((a, b) => a.uppgift - b.uppgift);
 }
 
-/** Per-year offset: first Uppgift id in Delprov B bedömnings-PDF */
+/** Per-year offset: first Uppgift id in Delprov B bedömnings-PDF (åk 9) */
 export const GEO_B_UPPGIFT_OFFSET: Record<number, number> = {
   2013: 14,
   2014: 17,
@@ -264,18 +264,28 @@ export const GEO_B_UPPGIFT_OFFSET: Record<number, number> = {
   2018: 14,
 };
 
+/** Per-year offset for Geografi åk 6 Delprov B */
+export const GEO_AK6_B_UPPGIFT_OFFSET: Record<number, number> = {
+  2013: 18,
+  2014: 12,
+  2015: 11,
+};
+
 export function geoUppgiftId(
   year: number,
   delprov: 'A' | 'B',
   localNum: string | number,
-  aCount: number
+  aCount: number,
+  niva: 'ak9' | 'ak6' = 'ak9'
 ): number | null {
   const raw = String(localNum).trim();
   const sub = raw.match(/^(\d+)([a-z])$/i);
+  const offsetMap = niva === 'ak6' ? GEO_AK6_B_UPPGIFT_OFFSET : GEO_B_UPPGIFT_OFFSET;
+
   if (sub) {
     const parent = Number(sub[1]);
     if (delprov === 'A') return parent;
-    const offset = GEO_B_UPPGIFT_OFFSET[year] ?? aCount + 1;
+    const offset = offsetMap[year] ?? aCount + 1;
     return parent + offset - 1;
   }
 
@@ -287,8 +297,20 @@ export function geoUppgiftId(
   const local = Number.parseInt(raw, 10);
   if (!Number.isFinite(local)) return null;
   if (delprov === 'A') return local;
-  const offset = GEO_B_UPPGIFT_OFFSET[year] ?? aCount + 1;
+  const offset = offsetMap[year] ?? aCount + 1;
   return local + offset - 1;
+}
+
+/** Single elevhäfte row (åk 6 2017): merge parsed bedömnings-PDF into one facit block */
+export function combinedAk6FacitSummary(entries: GeoFacitEntry[]): string | null {
+  const parts = entries
+    .filter((e) => e.facit.replace(/^Bedömningskriterier:\s*/i, '').trim().length > 12)
+    .map((e) => {
+      const body = e.facit.replace(/^\.+\s*/, '').replace(/^Bedömningskriterier:\s*/i, '').trim();
+      return `Uppgift ${e.uppgift}: ${body.slice(0, 350)}`;
+    });
+  if (!parts.length) return null;
+  return parts.join(' | ').slice(0, 4000);
 }
 
 /** Pull a) b) c) answer from combined facit block */
@@ -373,9 +395,10 @@ export function facitForFraga(
   aCount: number,
   facitMap: Record<number, string>,
   entries: GeoFacitEntry[],
-  bedText?: string
+  bedText?: string,
+  niva: 'ak9' | 'ak6' = 'ak9'
 ): string | null {
-  const uppgiftId = geoUppgiftId(year, delprov, fragaNummer, aCount);
+  const uppgiftId = geoUppgiftId(year, delprov, fragaNummer, aCount, niva);
   if (uppgiftId && facitMap[uppgiftId]) {
     return extractSubFacit(facitMap[uppgiftId], fragaNummer);
   }
