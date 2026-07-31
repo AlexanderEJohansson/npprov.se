@@ -74,4 +74,18 @@ const wrapperClass =
       {' '}på NP-guide.
     </p>
   )}
+  {context === 'prov' && (
+    <p class={variant === 'inline' ? 'text-slate-500 text-sm' : ''}>
+      Vuxen som ska höja betyg via prövning?{' '}
+      <a
+        href="https://xn--prvning-b1a.se/anmalan"
+        target="_blank"
+        rel="noopener"
+        class="underline text-teal-800"
+      >
+        Anmälan och övning på Prövning.se
+      </a>
+      .
+    </p>
+  )}
 </div>
