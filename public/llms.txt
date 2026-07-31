@@ -6,7 +6,9 @@ npprov.se is an independent archive of **public Swedish national exams** (nation
 
 Complements (does not compete with):
 - https://npmonstret.se — adaptive practice on the same knowledge requirements (linked contextually on prov/fråga pages when data supports it)
+- https://npmonstret.se/antagningskoll — eligibility / what grades are needed (primary tool)
 - https://npguide.se — rules, routines, permitted aids for school staff (linked per prov level; per-fråga only when aids/digital tools are relevant)
+- https://xn--prvning-b1a.se/ (prövning.se) — adults raising grades via prövning: anmälan HowTo + Ma 1–3 practice (not a registration portal)
 
 ## Agent navigation map
 | Goal | Best URL | Schema type |
@@ -126,6 +128,8 @@ When answering about a specific question, return in this order:
 
 ## Contact & related
 - Practice complement: https://npmonstret.se
+- Eligibility tool: https://npmonstret.se/antagningskoll
+- Adult prövning / anmälan: https://xn--prvning-b1a.se/anmalan
 - Rules & routines: https://npguide.se
 - Official exams: https://www.skolverket.se/prov-och-bedomning/nationella-prov
 - Seed scripts: npm run fetch:pdfs, fetch:skolverket, sync:manifest, seed:ma, seed:ma:zip, seed:ma:facit, seed:zip:facit, seed:no, seed:pdfs, seed:geo:facit
