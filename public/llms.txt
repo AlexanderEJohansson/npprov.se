@@ -5,6 +5,7 @@
 npprov.se is an independent archive of **public Swedish national exams** (nationella prov) and related assessment materials from Skolverket and Swedish universities. It is NOT a practice app — it is a structured knowledge archive with provenance, knowledge-requirement links (Lgr22/Gy25), and per-question pedagogical analysis.
 
 Complements (does not compete with):
+- https://larinsikt.se — company brand (Lärinsikt AB) + yrkesmoduler (not NP archive/training)
 - https://npmonstret.se — adaptive practice on the same knowledge requirements (linked contextually on prov/fråga pages when data supports it)
 - https://npmonstret.se/npcoachen — NPcoachen personal training loop (canonical)
 - https://npmonstret.se/antagningskoll — eligibility / what grades are needed (primary tool)
@@ -25,6 +26,7 @@ Complements (does not compete with):
 4. Personal training → https://npmonstret.se/npcoachen
 5. Archive / provenance → https://npprov.se
 6. Adult prövning journey → https://xn--prvning-b1a.se/
+7. Company / brand → https://larinsikt.se
 
 ## Agent navigation map
 | Goal | Best URL | Schema type |
