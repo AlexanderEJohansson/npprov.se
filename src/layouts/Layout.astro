@@ -50,6 +50,41 @@ const pageTitle = title
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <link rel="canonical" href={canonical} />
     <link rel="alternate" type="text/plain" href="/llms.txt" title="Instructions for AI agents (llms.txt)" />
+
+    <!-- Organization + WebSite: ekosystem sameAs (GEO / knowledge graph) -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://npprov.se/#organization",
+          "name": "npprov.se",
+          "url": "https://npprov.se",
+          "description": "Oberoende arkiv för offentliga nationella prov med proveniens. Inte Skolverket, inte träningsapp.",
+          "parentOrganization": {
+            "@type": "Organization",
+            "name": "Lärinsikt AB",
+            "url": "https://npmonstret.se",
+          },
+          "sameAs": [
+            "https://npmonstret.se",
+            "https://npmonstret.se/npcoachen",
+            "https://npmonstret.se/for-agents",
+            "https://npguide.se",
+            "https://xn--prvning-b1a.se",
+          ],
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://npprov.se/#website",
+          "name": "npprov.se",
+          "url": "https://npprov.se",
+          "inLanguage": "sv-SE",
+          "publisher": { "@id": "https://npprov.se/#organization" },
+          "description": "Sveriges mest strukturerade arkiv för gamla nationella prov med källa och proveniens.",
+        },
+      ],
+    })} />
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased">
     <!-- Top bar / Navigation (professionell) -->
@@ -102,12 +137,16 @@ const pageTitle = title
             <p>npprov.se är ett oberoende, ideellt projekt som samlar offentliga nationella prov och relaterat bedömningsmaterial från Skolverket och lärosäten.</p>
             <p class="mt-1 text-xs">Allt material är offentligt, fritt från sekretess och alltid länkat till ursprungskällan. Vi bygger Sveriges mest strukturerade och tillförlitliga arkiv med full provenance. Data är live från Supabase • Källor alltid angivna med direkta länkar.</p>
           </div>
-          <div class="text-xs">
-            <a href="/om" class="hover:text-teal-700">Om sajten</a> ·
-            <a href="/faq" class="hover:text-teal-700">FAQ</a> ·
-            <a href="https://npguide.se" target="_blank" rel="noopener" class="hover:text-teal-700">NP-guide (regler &amp; rutiner)</a> ·
-            <a href="https://www.skolverket.se/prov-och-bedomning/nationella-prov" target="_blank" rel="noopener" class="hover:text-teal-700">Skolverket</a> ·
-            <span class="text-slate-400">Provenance alltid angivet</span>
+          <div class="text-xs space-y-1">
+            <p>
+              <a href="/om" class="hover:text-teal-700">Om sajten</a> ·
+              <a href="/faq" class="hover:text-teal-700">FAQ</a> ·
+              <a href="https://npguide.se?utm_source=npprov&utm_medium=ecosystem&utm_campaign=footer" target="_blank" rel="noopener" class="hover:text-teal-700">NP-guide (regler)</a> ·
+              <a href="https://npmonstret.se/npcoachen?utm_source=npprov&utm_medium=ecosystem&utm_campaign=footer" target="_blank" rel="noopener" class="hover:text-teal-700">NPcoachen</a> ·
+              <a href="https://xn--prvning-b1a.se/?utm_source=npprov&utm_medium=ecosystem&utm_campaign=footer" target="_blank" rel="noopener" class="hover:text-teal-700">prövning.se</a> ·
+              <a href="https://www.skolverket.se/prov-och-bedomning/nationella-prov" target="_blank" rel="noopener" class="hover:text-teal-700">Skolverket</a>
+            </p>
+            <p class="text-slate-400">Provenance alltid angivet · Lärinsikt-ekosystemet · Senast kontrollerad: augusti 2026</p>
           </div>
         </div>
       </div>

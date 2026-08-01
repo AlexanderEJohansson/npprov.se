@@ -1,5 +1,5 @@
 # npprov.se – Agent Instructions (llms.txt)
-# Updated: 2026-07-10 | Language: sv-SE | Canonical: https://npprov.se
+# Updated: 2026-08-01 | Language: sv-SE | Canonical: https://npprov.se
 
 ## What this site is
 npprov.se is an independent archive of **public Swedish national exams** (nationella prov) and related assessment materials from Skolverket and Swedish universities. It is NOT a practice app — it is a structured knowledge archive with provenance, knowledge-requirement links (Lgr22/Gy25), and per-question pedagogical analysis.
@@ -32,6 +32,7 @@ Complements (does not compete with):
 | Contribute corrections | /bidra | Report |
 | All exams list | /prov | CollectionPage + ItemList |
 | Site metadata | /om | AboutPage + Organization |
+| FAQ (humans + agents) | /faq | FAQPage |
 
 Sitemap: https://npprov.se/sitemap-index.xml
 Robots: https://npprov.se/robots.txt (allows GPTBot, Google-Extended, PerplexityBot)
