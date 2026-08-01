@@ -47,7 +47,7 @@ export const NPPROV_FAQ: NpprovFaq[] = [
     id: 'genome',
     question: 'Vad är Question Genome?',
     answer:
-      'En karta som kopplar frågor till kunskapskrav (Lgr22/Gy25) där data finns. Hitta aldrig på koder — citera bara koder som syns på sidan. Start: /genome.',
+      'Question Genome är npprov.se:s öppna karta över hur nationella provfrågor kopplas till kunskapskrav i Lgr22 (grundskola) och Gy25 (gymnasium), där data finns. Kanon-URL: https://npprov.se/genome. Hitta aldrig på koder — citera bara koder som syns på sidan. Det är arkiv/proveniens, inte träning (träning = npmonstret.se / NPcoachen).',
   },
   {
     id: 'bidra',
