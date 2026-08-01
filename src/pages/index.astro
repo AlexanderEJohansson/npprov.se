@@ -48,45 +48,42 @@ const senaste = [...provData].slice(0, 8);
 
 <Layout>
   <!-- Hero -->
-  <section class="max-w-7xl mx-auto px-6 pt-16 pb-12">
+  <section class="max-w-7xl mx-auto px-6 pt-14 pb-10">
     <div class="max-w-3xl">
-      <div class="inline-block px-4 py-1 bg-teal-100 text-teal-800 rounded-3xl text-sm font-medium mb-4">
-        Offentligt material • Stark provenance • Maskinläsbart
-      </div>
+      <p class="text-sm font-medium text-teal-800 mb-3">
+        Offentligt material · källa på varje post · {minAr}–{maxAr}
+      </p>
       
-      <h1 class="text-6xl font-semibold tracking-[-1.5px] leading-none text-balance">
+      <h1 class="text-4xl sm:text-5xl font-semibold tracking-tight leading-tight text-balance text-slate-900">
         Gamla nationella prov — arkiv med proveniens
       </h1>
       
-      <p class="mt-6 text-2xl text-slate-600 leading-tight">
-        Strukturerat med provenance och kopplingar till Lgr22/Gy25.<br>
-        För lärare som vill veta exakt vad som testas.
+      <p class="mt-5 text-lg text-slate-600 leading-relaxed max-w-2xl">
+        Här ligger offentliga prov och bedömningsmaterial, spårbart till
+        Skolverket och lärosäten. Byggd för lärare och skolpersonal som
+        behöver källa — inte en träningsapp för elever.
       </p>
 
-      <div class="mt-8 flex flex-wrap gap-4">
+      <div class="mt-8 flex flex-wrap gap-3">
         {medFraga.length > 0 ? (
           <a href="#med-fraga"
-             class="inline-flex items-center justify-center bg-teal-800 hover:bg-teal-900 text-white font-semibold h-12 px-8 rounded-3xl text-lg transition">
-            Öva med {totalFragor} frågor
+             class="inline-flex items-center justify-center bg-teal-800 hover:bg-teal-900 text-white font-semibold h-11 px-6 rounded-2xl transition">
+            Se {totalFragor} frågor med facit
           </a>
         ) : (
           <a href="/prov"
-             class="inline-flex items-center justify-center bg-teal-800 hover:bg-teal-900 text-white font-semibold h-12 px-8 rounded-3xl text-lg transition">
+             class="inline-flex items-center justify-center bg-teal-800 hover:bg-teal-900 text-white font-semibold h-11 px-6 rounded-2xl transition">
             Bläddra bland {total} poster
           </a>
         )}
         <a href="/prov"
-           class="inline-flex items-center justify-center border border-slate-300 hover:bg-white font-medium h-12 px-8 rounded-3xl text-lg transition">
-          Alla {total} poster
-        </a>
-        <a href="/genome"
-           class="inline-flex items-center justify-center border border-slate-300 hover:bg-white font-medium h-12 px-8 rounded-3xl text-lg transition">
-          Question Genome
+           class="inline-flex items-center justify-center border border-slate-300 hover:bg-white font-medium h-11 px-6 rounded-2xl transition">
+          Alla poster
         </a>
       </div>
 
       <p class="mt-4 text-sm text-slate-500">
-        Material från Skolverket, Umeå universitet, Uppsala universitet, Stockholms universitet (PRIM-gruppen), Göteborgs universitet m.fl. • 2016–2025 • Allt offentligt och verifierbart
+        Källor: Skolverket, Umeå, Uppsala, PRIM-gruppen m.fl. Allt offentligt.
       </p>
       <div class="mt-2">
         <DataStatus variant="home" />
@@ -122,11 +119,11 @@ const senaste = [...provData].slice(0, 8);
   {medFraga.length > 0 && (
     <section id="med-fraga" class="max-w-7xl mx-auto px-6 pb-16">
       <div class="flex items-baseline justify-between mb-2">
-        <h2 class="text-2xl font-semibold tracking-tight">Öva med strukturerade frågor</h2>
-        <a href="/prov#med-fraga" class="text-sm text-teal-700 hover:underline">Se alla i katalogen →</a>
+        <h2 class="text-2xl font-semibold tracking-tight">Prov med inlagda frågor</h2>
+        <a href="/prov#med-fraga" class="text-sm text-teal-700 hover:underline">Hela listan →</a>
       </div>
       <p class="text-slate-600 mb-5 max-w-2xl">
-        Dessa {medFraga.length} prov har riktig frågetext, svarsalternativ och facit – redo att gå igenom direkt utan att ladda ner PDF.
+        {medFraga.length} prov har frågetext och facit i databasen — du slipper öppna PDF:en först.
       </p>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -178,41 +175,42 @@ const senaste = [...provData].slice(0, 8);
     </div>
   </section>
 
-  <!-- Positionering & Vision -->
   <section class="bg-white border-y border-slate-200 py-12">
-    <div class="max-w-4xl mx-auto px-6 text-center">
-      <h2 class="text-3xl font-semibold tracking-tight">Vad är npprov.se?</h2>
-      <div class="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
-        Ett arkiv med offentliga nationella prov och bedömningsmaterial från Skolverket och universitet. 
-        Varje prov har länk till ursprungskällan. Strukturen gör det möjligt att se exakt vilka kunskapskrav som testas i varje fråga.
-      </div>
-      <div class="mt-8 grid md:grid-cols-3 gap-6 text-left text-sm">
-        <div class="p-5 border border-slate-100 rounded-3xl">
-          <div class="font-medium text-teal-900">För lärare</div>
-          <p class="mt-2 text-slate-600">Se vilka kunskapskrav som faktiskt testas i ett specifikt prov eller en specifik uppgift. Hitta historiska varianter och bedömningsunderlag.</p>
-        </div>
-        <div class="p-5 border border-slate-100 rounded-3xl">
-          <div class="font-medium text-teal-900">För elever</div>
-          <p class="mt-2 text-slate-600">Förstå vanliga missförstånd i en uppgift och varför den är viktig. Se kopplingen till det kunskapskrav du behöver öva på.</p>
-        </div>
-        <div class="p-5 border border-slate-100 rounded-3xl">
-          <div class="font-medium text-teal-900">För den som vill analysera</div>
-          <p class="mt-2 text-slate-600">Maskinläsbar data med provenance. Möjlighet att se mönster över tid via kunskapsmålskopplingar och trender.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="max-w-3xl mx-auto px-6 py-10">
-    <div class="text-center text-sm text-slate-600 space-y-2">
-      <p>
-        <strong class="text-slate-800">Ekosystem:</strong> npprov.se är arkivet med provenance och per-fråga-analys.
-        <a href="https://npmonstret.se/npcoachen?utm_source=npprov&utm_medium=ecosystem&utm_campaign=home" target="_blank" rel="noopener" class="text-teal-700 hover:underline ml-1">NP-Monstret / NPcoachen</a> övar adaptivt på samma kunskapskrav.
-        <a href="https://npguide.se" target="_blank" rel="noopener" class="text-teal-700 hover:underline ml-1">NP-guide</a> samlar regler och rutiner för skolpersonal.
+    <div class="max-w-3xl mx-auto px-6">
+      <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Vad är det här?</h2>
+      <p class="mt-4 text-slate-600 leading-relaxed">
+        Ett oberoende arkiv med offentliga nationella prov och bedömningsmaterial.
+        Varje post har länk till ursprungskällan. Syftet är spårbarhet — inte att
+        ersätta Skolverket eller en övningsapp.
       </p>
-      <p class="text-xs text-slate-500">
-        Länkar till systersajterna visas kontextuellt på prov- och frågesidor — inte upprepat på varje frågekort.
-      </p>
+      <div class="mt-8 grid sm:grid-cols-2 gap-4 text-sm">
+        <div class="p-5 border border-slate-100 rounded-2xl bg-slate-50">
+          <div class="font-medium text-teal-900">För dig i skolan</div>
+          <p class="mt-2 text-slate-600">
+            Hitta historiska prov, bedömningsunderlag och se kopplingar till
+            kunskapskrav där de är inlagda.
+          </p>
+        </div>
+        <div class="p-5 border border-slate-100 rounded-2xl bg-slate-50">
+          <div class="font-medium text-teal-900">Vill du öva istället?</div>
+          <p class="mt-2 text-slate-600">
+            Gå till{' '}
+            <a
+              href="https://npmonstret.se/npcoachen?utm_source=npprov&utm_medium=ecosystem&utm_campaign=home"
+              target="_blank"
+              rel="noopener"
+              class="text-teal-800 underline"
+            >
+              NPcoachen
+            </a>
+            . Regler för genomförande finns på{' '}
+            <a href="https://npguide.se/?utm_source=npprov&utm_medium=ecosystem&utm_campaign=home" target="_blank" rel="noopener" class="text-teal-800 underline">
+              npguide.se
+            </a>
+            .
+          </p>
+        </div>
+      </div>
     </div>
   </section>
 
