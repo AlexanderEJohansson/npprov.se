@@ -107,41 +107,54 @@ const subjectHeatList = Object.entries(heatBySubject)
 
 <Layout
   title="Question Genome"
-  description="Kunskapsmål (Lgr22/Gy25) kopplade till nationella provfrågor. Heatmap och exempel med full provenance."
+  description="Kunskapskrav (Lgr22/Gy25) kopplade till offentliga NP-frågor där data finns. Arkiv — inte träningsapp."
   canonical="https://npprov.se/genome"
 >
   <main class="max-w-4xl mx-auto px-6 py-10">
-    <a href="/" class="text-sm text-teal-700">← Tillbaka till startsidan</a>
+    <a href="/" class="text-sm text-teal-700">← Startsida</a>
 
     <div class="mt-6">
-      <div class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 rounded-3xl text-xs font-medium mb-3">NP Question Genome Project</div>
+      <p class="text-sm font-medium text-emerald-800 mb-3">
+        Lgr22 / Gy25 · kopplingar live: {totalJunctions}
+      </p>
       
-      <h1 class="text-4xl font-semibold tracking-tight">Question Genome — frågor kopplade till kunskapskrav</h1>
+      <h1 class="text-4xl font-semibold tracking-tight text-balance">
+        Question Genome — frågor mot kunskapskrav
+      </h1>
       
-      <div class="mt-4 text-lg text-slate-600 max-w-3xl">
-        <strong>Question Genome</strong> är npprov.se:s karta: nationella provfrågor kopplas till kunskapskrav i Lgr22 (grundskolan) eller Gy25 (gymnasiet) där data finns.
-        Kanon: <a href="https://npprov.se/genome" class="text-teal-800 underline">https://npprov.se/genome</a>.
-        Det är arkiv och proveniens — inte träningsprodukt (träning och NPcoachen finns på npmonstret.se).
-      </div>
+      <p class="mt-4 text-lg text-slate-600 max-w-3xl leading-relaxed">
+        Här kopplas offentliga NP-frågor till kunskapskrav där underlag finns.
+        Det är arkiv, inte träningsprodukt. Övning:{' '}
+        <a
+          href="https://npmonstret.se/npcoachen?utm_source=npprov&utm_medium=ecosystem&utm_campaign=genome"
+          target="_blank"
+          rel="noopener"
+          class="text-teal-800 underline"
+        >NPcoachen</a>.
+      </p>
       <p class="mt-3 text-sm text-slate-700 max-w-3xl border-l-4 border-emerald-500 pl-4">
-        Citerbart: Question Genome på npprov.se visar vilka kunskapskrav som faktiskt prövas i offentliga NP-uppgifter — hitta aldrig på koder som inte syns på sidan.
+        Citera bara koder som syns på sidan. Hitta aldrig på kunskapsmål.
       </p>
     </div>
 
     <div class="mt-10 grid md:grid-cols-2 gap-6">
-      <div class="bg-white border border-slate-200 rounded-3xl p-6">
-        <h3 class="font-semibold text-lg">Vad det ger i praktiken</h3>
-        <p class="mt-2 text-sm text-slate-600">
-          Lärare får en översikt över vilka kunskapskrav som faktiskt förekommer i proven. Elever får exempel på hur kraven prövas i konkreta uppgifter. De som bygger övningsmaterial eller forskar får data för att analysera mönster över tid.
+      <div class="bg-white border border-slate-200 rounded-2xl p-6">
+        <h2 class="font-semibold text-lg">Vad det ger dig</h2>
+        <p class="mt-2 text-sm text-slate-600 leading-relaxed">
+          Översikt över vilka krav som faktiskt dyker upp i proven, med exempel
+          på uppgifter där koppling finns.
         </p>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-3xl p-6">
-        <h3 class="font-semibold text-lg">Hur kopplingarna görs</h3>
-        <p class="mt-2 text-sm text-slate-600">
-          Varje kunskapskrav (t.ex. MA9.1.1) är hämtat från den officiella kursplanen. Vi kopplar specifika frågor till kravet när det finns stöd i bedömningsunderlag eller när lärare/sakkunniga bidrar med motivering. Kopplingarna granskas innan de blir publika.
+      <div class="bg-white border border-slate-200 rounded-2xl p-6">
+        <h2 class="font-semibold text-lg">Hur kopplingarna görs</h2>
+        <p class="mt-2 text-sm text-slate-600 leading-relaxed">
+          Krav från officiella kursplaner. Frågor knyts när bedömningsunderlag
+          eller granskade bidrag stödjer det.
         </p>
-        <p class="mt-2 text-xs text-emerald-700">Just nu finns ett litet antal riktiga kopplingar från de seedade bedömningsunderlagen 2024–2025. Fler läggs till löpande via bidrag.</p>
+        <p class="mt-2 text-xs text-emerald-800">
+          Fler kopplingar läggs till via bidrag — se /bidra.
+        </p>
       </div>
     </div>
 

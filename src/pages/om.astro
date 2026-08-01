@@ -5,83 +5,76 @@ import StructuredData from '../components/StructuredData.astro';
 
 <Layout
   title="Om npprov.se"
-  description="Oberoende arkiv för offentliga nationella prov med provenance, kunskapsmålskopplingar och agentvänlig struktur."
+  description="Oberoende arkiv för offentliga nationella prov med källa och proveniens. Inte Skolverket, inte en träningsapp."
   canonical="https://npprov.se/om"
 >
   <main class="max-w-3xl mx-auto px-6 py-10">
-    <a href="/" class="text-sm text-teal-700 hover:underline">← Tillbaka till startsidan</a>
+    <a href="/" class="text-sm text-teal-700 hover:underline">← Startsida</a>
 
     <h1 class="mt-6 text-4xl font-semibold tracking-tight">Om npprov.se</h1>
 
-    <div class="mt-6 text-lg text-slate-700 leading-relaxed">
-      npprov.se är ett oberoende, ideellt projekt som samlar, strukturerar och tillgängliggör gamla nationella prov och relaterat bedömningsmaterial från Skolverket och de lärosäten som konstruerar proven på uppdrag av myndigheten.
-    </div>
+    <p class="mt-6 text-lg text-slate-700 leading-relaxed">
+      Ett oberoende arkiv som samlar offentliga nationella prov och bedömningsmaterial
+      från Skolverket och lärosäten. Varje post ska gå att spåra till originalet.
+    </p>
 
-    <div class="mt-8 space-y-8 text-[15px] text-slate-700">
-      <div>
-        <h2 class="font-semibold text-xl tracking-tight">Vår ambition</h2>
-        <p class="mt-2">
-          Att bli Sveriges mest kompletta, strukturerade och pedagogiskt genomtänkta arkiv för nationella prov. 
-          Inte bara länkar – utan ett kunskapsarkiv där varje fråga kan kopplas till exakta kunskapskrav (Lgr22/Gy25), 
-          där vanliga missförstånd dokumenteras, historiska varianter kartläggs och provenance alltid är tydlig.
+    <div class="mt-10 space-y-8 text-[15px] text-slate-700">
+      <section>
+        <h2 class="font-semibold text-xl tracking-tight">Vad vi gör</h2>
+        <p class="mt-2 leading-relaxed">
+          Vi strukturerar offentligt material: metadata, filer och i vissa fall
+          frågor med facit. Där det finns koppling till kunskapskrav (Lgr22/Gy25)
+          visas det. Målet är spårbarhet — inte att bygga världens största slogan.
         </p>
-      </div>
+      </section>
 
-      <div>
-        <h2 class="font-semibold text-xl tracking-tight">Teknik &amp; data</h2>
+      <section>
+        <h2 class="font-semibold text-xl tracking-tight">Teknik i korthet</h2>
         <ul class="mt-2 space-y-1 list-disc pl-5">
-          <li>Data lagras i Supabase (PostgreSQL) och är live på sajten.</li>
-          <li>Byggd med Astro + Tailwind för extremt snabba, statiskt genererade sidor med öar av interaktivitet.</li>
-          <li>Full provenance på varje post: källa, länk till original, datum, human_reviewed-flagga.</li>
-          <li>Optimerad för både människor och AI-agenter (schema.org, llms.txt, semantisk HTML, RAG-vänlig struktur).</li>
-          <li>WCAG 2.2 AA-mål, prestanda &lt;2s, mobilanpassad.</li>
+          <li>Data i Supabase (PostgreSQL), sidor med Astro.</li>
+          <li>Proveniens: källa, länk, datum, granskningsflaggor där det finns.</li>
+          <li>llms.txt och schema.org för den som citerar eller indexerar.</li>
         </ul>
-      </div>
+      </section>
 
-      <div>
-        <h2 class="font-semibold text-xl tracking-tight">Ekosystemet kring nationella prov</h2>
-        <p class="mt-2">
-          Vi kompletterar, inte konkurrerar med andra NP-projekt. Tillsammans täcker de olika behov:
-        </p>
-        <ul class="mt-2 space-y-1 list-disc pl-5">
-          <li><strong>npprov.se</strong> — auktoritativt arkiv med provenance och koppling till kunskapskrav (Lgr22/Gy25).</li>
-          <li><a href="https://npmonstret.se" target="_blank" rel="noopener" class="underline">NP-Monstret</a> — adaptiv övning med feedback utifrån samma kunskapskrav.</li>
-          <li><a href="https://npguide.se" target="_blank" rel="noopener" class="underline">NP-guide</a> — regler, rutiner, hjälpmedel och lärarinformation för skolpersonal.</li>
+      <section>
+        <h2 class="font-semibold text-xl tracking-tight">Ekosystem</h2>
+        <ul class="mt-2 space-y-2 list-disc pl-5">
+          <li><strong>npprov.se</strong> — arkiv med proveniens</li>
+          <li>
+            <a href="https://npguide.se/?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" target="_blank" rel="noopener" class="underline text-teal-800">npguide.se</a>
+            — regler för skolpersonal
+          </li>
+          <li>
+            <a href="https://npmonstret.se/npcoachen?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" target="_blank" rel="noopener" class="underline text-teal-800">NPcoachen</a>
+            — elevträning (npmonstret.se)
+          </li>
+          <li>
+            <a href="https://xn--prvning-b1a.se/?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" target="_blank" rel="noopener" class="underline text-teal-800">prövning.se</a>
+            — vuxna som ska höja betyg
+          </li>
         </ul>
-      </div>
+      </section>
 
-      <div>
+      <section>
         <h2 class="font-semibold text-xl tracking-tight">Bidra</h2>
-        <p class="mt-2">
-          Lärare, forskare och intresserade är välkomna att bidra med kopplingsförslag (fraga ↔ kunskapsmål), förklaringar av vanliga missförstånd, 
-          eller tips om ytterligare offentliga källor. Allt modereras för kvalitet och korrekthet. Bidrag skickas via formulär på /bidra (och på per-fråga-sidor samt i Question Genome) och sparas med status pending + full provenance.
+        <p class="mt-2 leading-relaxed">
+          Förslag på kunskapsmålskopplingar, förklaringar och källor skickas via{' '}
+          <a href="/bidra" class="underline text-teal-800">/bidra</a>
+          {' '}eller per-fråga-sidor. Bidrag granskas innan de blir publika.
         </p>
-      </div>
+      </section>
 
-      <div class="pt-4 border-t text-xs text-slate-500">
-        Projektet drivs utan vinstsyfte. Allt material som visas är offentligt och får användas enligt Skolverkets villkor. 
-        Vi anger alltid exakt källa så att du själv kan verifiera och ladda ner från originalet.
-      </div>
-
-      <div class="mt-6 p-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-600">
-        <strong>Datastatus:</strong> 110 prov i manifest, 1&nbsp;050+ strukturerade frågor i Ma, NO, Svenska, Engelska (ak6+ak9), Geografi (2013–2018), Historia/Samhäll/Religion (TEX-body + CNT) — live-räkning på /prov.
-        Full per-fråga-struktur (fraga + svarsalternativ_json + missförstånd + kunskapsmål via fraga_kunskapsmal) för seedade prov. 
-        Länkar till NP-Monstret och NP-guide visas kontextuellt — inte upprepat på varje frågekort.
-        Bidrag är funktionella: formulär på /bidra, /genome och per-fråga-sidor skickar live till community_forklaring (status=pending) med full provenance. Granskade bidrag blir publika via /moderera (internt verktyg).
-        Dedikerade Question-sidor + Question Genome med live-länkar finns. Allt är verifierbart via Supabase + offentliga källor.
-      </div>
+      <p class="pt-4 border-t text-xs text-slate-500 leading-relaxed">
+        Inte myndighet. Allt visat material är offentligt. Ange alltid originalkällan
+        om du återpublicerar.
+      </p>
     </div>
   </main>
 
   <StructuredData type="AboutPage" data={{
     name: "Om npprov.se",
-    description: "Oberoende arkiv för offentliga nationella prov med provenance, kunskapsmålskopplingar och agentvänlig struktur.",
+    description: "Oberoende arkiv för offentliga nationella prov med proveniens.",
     url: "https://npprov.se/om"
-  }} />
-  <StructuredData type="Organization" data={{
-    name: "npprov.se",
-    url: "https://npprov.se",
-    description: "Ideellt projekt som strukturerar offentliga nationella prov för lärare, elever och AI-agenter.",
-    sameAs: ["https://npmonstret.se", "https://npguide.se"]
   }} />
 </Layout>
