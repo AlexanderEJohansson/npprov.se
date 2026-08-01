@@ -14,10 +14,11 @@ import StructuredData from '../components/StructuredData.astro';
 
     <h1 class="mt-6 text-4xl font-semibold tracking-tight">Källor och ursprung</h1>
 
-    <div class="mt-6 text-lg text-slate-600">
-      Allt material på NPprov.se kommer från offentliga källor som Skolverket och de lärosäten som på uppdrag av Skolverket konstruerar de nationella proven. 
-      Vi speglar bara det som är fritt från sekretess och får användas.
-    </div>
+    <p class="mt-6 text-lg text-slate-600 leading-relaxed">
+      Materialet kommer från offentliga källor: Skolverket och de lärosäten som
+      konstruerar proven. Vi speglar bara det som är fritt från sekretess.
+      Originalet är alltid auktoritativt.
+    </p>
 
     <div class="mt-10 space-y-8">
       <div>
@@ -34,20 +35,19 @@ import StructuredData from '../components/StructuredData.astro';
 
       <div>
         <h2 class="font-semibold text-xl">Vår princip</h2>
-        <p class="text-sm text-slate-600 mt-1">
-          Vi anger alltid källa (t.ex. "Umeå universitet" eller "Skolverket") på varje post med direkt länk. 
-          Länkar går i första hand till den officiella publiceringen från Skolverket eller det ansvariga lärosätet. 
-          Lokala kopior är arkiverade här för långsiktig tillgänglighet och bekvämlighet – den officiella källan är alltid den auktoritativa versionen.
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+          Varje post har källa och helst direktlänk. Lokala filer är arkivkopior —
+          den officiella publiceringen gäller vid avvikelse.
         </p>
       </div>
 
       <div class="text-xs text-slate-500">
-        Senast kontrollerade källor: Skolverkets sida för gamla nationella prov (2025–2026).
+        Senast kontrollerat: Skolverkets lista över gamla nationella prov (2025–2026).
       </div>
 
-      <div class="mt-8 text-xs border-l-2 border-slate-200 pl-3 text-slate-500">
-        <strong>Provenance-princip:</strong> Varje prov och varje fraga har fälten kalla, kalla_url, human_reviewed och last_updated. 
-        Officiell källa är alltid auktoritativ. Lokala filer är enbart arkiverade kopior för tillgänglighet.
+      <div class="mt-8 text-xs border-l-2 border-teal-200 pl-3 text-slate-600">
+        <strong>Proveniens:</strong> fält som källa, länk, granskad och uppdaterad
+        datum där det finns i databasen.
       </div>
 
       <Provenance kalla="Skolverket m.fl. lärosäten" kallaUrl="https://www.skolverket.se/prov-och-bedomning/nationella-prov" showFull={false} />
