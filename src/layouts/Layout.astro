@@ -24,10 +24,27 @@ const pageTitle = title
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+
+    <!-- Open Graph / social trust -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="sv_SE" />
+    <meta property="og:site_name" content="npprov.se" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content="https://npprov.se/og-default.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="npprov.se — gamla nationella prov, arkiv med proveniens" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="https://npprov.se/og-default.svg" />
     
     <!-- Agentic SEO / AEO 2026 -->
     <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -41,7 +58,8 @@ const pageTitle = title
         <div class="flex h-16 items-center justify-between">
           <a href="/" class="flex items-center gap-x-3">
             <!-- Simple, sharp logo for npprov -->
-            <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0">
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" role="img" aria-label="npprov.se">
+              <title>npprov.se</title>
               <rect width="32" height="32" rx="8" fill="#134E4A"/>
               <text 
                 x="16" 
@@ -59,13 +77,14 @@ const pageTitle = title
             </div>
           </a>
 
-          <nav class="flex items-center gap-x-8 text-sm font-medium">
+          <nav class="flex items-center gap-x-8 text-sm font-medium" aria-label="Huvudnavigation">
             <a href="/prov" class="text-slate-600 hover:text-teal-900 transition">Alla prov</a>
             <a href="/kallor" class="text-slate-600 hover:text-teal-900 transition">Källor</a>
             <a href="/genome" class="text-slate-600 hover:text-teal-900 transition">Question Genome</a>
             <a href="/trender" class="text-slate-600 hover:text-teal-900 transition">Trender &amp; Prediktion</a>
+            <a href="/faq" class="text-slate-600 hover:text-teal-900 transition">FAQ</a>
             <a href="/bidra" class="text-slate-600 hover:text-teal-900 transition">Bidra</a>
-            <a href="https://npmonstret.se" target="_blank" rel="noopener" 
+            <a href="https://npmonstret.se/npcoachen?utm_source=npprov&utm_medium=nav&utm_campaign=header" target="_blank" rel="noopener" 
                class="text-slate-500 hover:text-teal-700 transition text-xs px-3 py-1 border border-slate-200 rounded-2xl hover:border-teal-200">
               Öva adaptivt → NP-Monstret
             </a>
@@ -85,6 +104,7 @@ const pageTitle = title
           </div>
           <div class="text-xs">
             <a href="/om" class="hover:text-teal-700">Om sajten</a> ·
+            <a href="/faq" class="hover:text-teal-700">FAQ</a> ·
             <a href="https://npguide.se" target="_blank" rel="noopener" class="hover:text-teal-700">NP-guide (regler &amp; rutiner)</a> ·
             <a href="https://www.skolverket.se/prov-och-bedomning/nationella-prov" target="_blank" rel="noopener" class="hover:text-teal-700">Skolverket</a> ·
             <span class="text-slate-400">Provenance alltid angivet</span>

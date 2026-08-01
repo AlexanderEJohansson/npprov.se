@@ -6,6 +6,10 @@ import DataStatus from '../components/DataStatus.astro';
 import FragaCountBadge from '../components/FragaCountBadge.astro';
 import { formatProvTitel } from '../lib/format-titel';
 import { getFragaCountsByProvId, getFragaCount, sortByFragaCount } from '../lib/fraga-counts';
+import { NPPROV_FAQ, faqPageSchema } from '../lib/faq-data';
+
+const HOME_FAQ_IDS = ['officiellt', 'metadata', 'ekosystem', 'vuxen', 'undervisning', 'npcoachen'] as const;
+const homeFaq = HOME_FAQ_IDS.map((id) => NPPROV_FAQ.find((f) => f.id === id)!).filter(Boolean);
 
 // Hämta live data från Supabase (vid build)
 const supabase = createSupabaseServerClient();
@@ -51,7 +55,7 @@ const senaste = [...provData].slice(0, 8);
       </div>
       
       <h1 class="text-6xl font-semibold tracking-[-1.5px] leading-none text-balance">
-        Arkiv för gamla nationella prov.
+        Gamla nationella prov — arkiv med proveniens
       </h1>
       
       <p class="mt-6 text-2xl text-slate-600 leading-tight">
@@ -203,7 +207,7 @@ const senaste = [...provData].slice(0, 8);
     <div class="text-center text-sm text-slate-600 space-y-2">
       <p>
         <strong class="text-slate-800">Ekosystem:</strong> npprov.se är arkivet med provenance och per-fråga-analys.
-        <a href="https://npmonstret.se" target="_blank" rel="noopener" class="text-teal-700 hover:underline ml-1">NP-Monstret</a> övar adaptivt på samma kunskapskrav.
+        <a href="https://npmonstret.se/npcoachen?utm_source=npprov&utm_medium=ecosystem&utm_campaign=home" target="_blank" rel="noopener" class="text-teal-700 hover:underline ml-1">NP-Monstret / NPcoachen</a> övar adaptivt på samma kunskapskrav.
         <a href="https://npguide.se" target="_blank" rel="noopener" class="text-teal-700 hover:underline ml-1">NP-guide</a> samlar regler och rutiner för skolpersonal.
       </p>
       <p class="text-xs text-slate-500">
@@ -211,4 +215,29 @@ const senaste = [...provData].slice(0, 8);
       </p>
     </div>
   </section>
+
+  <!-- FAQ: delad kanonsvar (src/lib/faq-data.ts) + hub /faq -->
+  <section class="max-w-3xl mx-auto px-6 pb-16" aria-labelledby="faq-home">
+    <h2 id="faq-home" class="text-2xl font-semibold text-slate-900 mb-6 text-center">
+      Vanliga frågor om arkivet
+    </h2>
+    <div class="space-y-3">
+      {homeFaq.map((item) => (
+        <details class="group rounded-2xl border border-slate-200 bg-white p-5">
+          <summary class="font-semibold text-slate-900 cursor-pointer list-none flex justify-between gap-4">
+            {item.question}
+            <span class="text-teal-700 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-3 text-sm text-slate-600 leading-relaxed">
+            {item.answer}
+          </p>
+        </details>
+      ))}
+    </div>
+    <p class="mt-6 text-center text-sm text-slate-500">
+      <a href="/faq" class="font-medium text-teal-800 underline underline-offset-2">Alla frågor (FAQ-hub)</a>
+    </p>
+  </section>
+
+  <script type="application/ld+json" set:html={JSON.stringify(faqPageSchema(homeFaq))} />
 </Layout>
