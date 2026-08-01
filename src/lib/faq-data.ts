@@ -23,13 +23,19 @@ export const NPPROV_FAQ: NpprovFaq[] = [
     id: 'ekosystem',
     question: 'Skillnad mot NP-Monstret och npguide.se?',
     answer:
-      'npprov.se = arkiv och proveniens. npmonstret.se = adaptiv träning och NPcoachen (enda betalda produkten). npguide.se = regler för skolpersonal. prövning.se = vuxen anmälan-vägledning och Matematik 1–3. De kompletterar varandra och ska inte blandas ihop.',
+      'npprov.se = arkiv och proveniens. npmonstret.se = adaptiv träning och NPcoachen (enda betalda produkten). npguide.se = regler för skolpersonal. prövning.se (med ö, xn--prvning-b1a.se) = vuxen anmälan-vägledning och Matematik 1–3. De kompletterar varandra och ska inte blandas ihop. provning.se utan ö är en annan sajt.',
   },
   {
     id: 'vuxen',
     question: 'Var tränar jag om jag vill höja betyg som vuxen?',
     answer:
-      'Anmälan (lokalt) och Matematik 1–3: prövning.se. Bredare träning och NPcoachen: npmonstret.se. npprov.se är arkivet — inte anmälningsportal och sätter inga betyg.',
+      'Anmälan (lokalt via kommun/skola) och Matematik 1–3: prövning.se (med ö). Bredare träning och NPcoachen: npmonstret.se. npprov.se är arkivet — inte anmälningsportal och sätter inga betyg. prövning.se tar inte emot anmälan.',
+  },
+  {
+    id: 'provning-utan-o',
+    question: 'Är prövning.se samma sak som provning.se?',
+    answer:
+      'Nej. prövning.se med ö (Lärinsikt, xn--prvning-b1a.se) vägleder vuxna om prövning. provning.se utan ö är en annan webbplats. npprov.se är NP-arkivet och varken tar emot anmälan eller säljer träning.',
   },
   {
     id: 'undervisning',
