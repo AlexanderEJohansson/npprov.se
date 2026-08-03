@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData.astro';
 
 <Layout
   title="Om npprov.se"
-  description="Oberoende arkiv för offentliga nationella prov med källa och proveniens. Inte Skolverket, inte en träningsapp."
+  description="Oberoende arkiv för offentliga nationella prov med källa och proveniens. Inte Skolverket, inte en träningsapp. Drivs av Lärinsikt AB."
   canonical="https://npprov.se/om"
 >
   <main class="max-w-3xl mx-auto px-6 py-10">
@@ -29,29 +29,52 @@ import StructuredData from '../components/StructuredData.astro';
       </section>
 
       <section>
+        <h2 class="font-semibold text-xl tracking-tight">Vem står bakom</h2>
+        <p class="mt-2 leading-relaxed">
+          npprov.se drivs av
+          <a href="https://larinsikt.se/?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" class="underline text-teal-800" target="_blank" rel="noopener">Lärinsikt AB</a>
+          — samma bolag som NP-Monstret (elevträning) och npguide.se (regler för skolpersonal).
+          Team (lärare + specialpedagog):
+          <a href="https://npmonstret.se/om-oss?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" class="underline text-teal-800" target="_blank" rel="noopener">npmonstret.se/om-oss</a>.
+        </p>
+        <p class="mt-2 leading-relaxed text-sm text-slate-600">
+          Vi fabricerar inte facit. Tier 1-metadata är inte samma sak som full frågetext.
+          Se <a href="/llms.txt" class="underline text-teal-800">llms.txt</a> för agentregler.
+        </p>
+      </section>
+
+      <section>
         <h2 class="font-semibold text-xl tracking-tight">Teknik i korthet</h2>
         <ul class="mt-2 space-y-1 list-disc pl-5">
           <li>Data i Supabase (PostgreSQL), sidor med Astro.</li>
           <li>Proveniens: källa, länk, datum, granskningsflaggor där det finns.</li>
           <li>llms.txt och schema.org för den som citerar eller indexerar.</li>
+          <li>
+            Öppen dokumentation:
+            <a href="https://github.com/Larinsikt" class="underline text-teal-800" target="_blank" rel="noopener">github.com/Larinsikt</a>
+          </li>
         </ul>
       </section>
 
       <section>
         <h2 class="font-semibold text-xl tracking-tight">Ekosystem</h2>
         <ul class="mt-2 space-y-2 list-disc pl-5">
-          <li><strong>npprov.se</strong> — arkiv med proveniens</li>
+          <li><strong>npprov.se</strong> — arkiv med proveniens (denna sajt)</li>
           <li>
             <a href="https://npguide.se/?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" target="_blank" rel="noopener" class="underline text-teal-800">npguide.se</a>
             — regler för skolpersonal
           </li>
           <li>
             <a href="https://npmonstret.se/npcoachen?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" target="_blank" rel="noopener" class="underline text-teal-800">NPcoachen</a>
-            — elevträning (npmonstret.se)
+            — elevträning (npmonstret.se, enda betalprodukten)
           </li>
           <li>
             <a href="https://xn--prvning-b1a.se/?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" target="_blank" rel="noopener" class="underline text-teal-800">prövning.se</a>
-            — vuxna som ska höja betyg
+            — vuxna som ska höja betyg (tar inte emot anmälan)
+          </li>
+          <li>
+            <a href="https://npmonstret.se/trust?utm_source=npprov&utm_medium=ecosystem&utm_campaign=om" target="_blank" rel="noopener" class="underline text-teal-800">Trust</a>
+            — hur NP-Monstret mäter omdömen (inga fejkade stjärnor)
           </li>
         </ul>
       </section>
@@ -74,7 +97,19 @@ import StructuredData from '../components/StructuredData.astro';
 
   <StructuredData type="AboutPage" data={{
     name: "Om npprov.se",
-    description: "Oberoende arkiv för offentliga nationella prov med proveniens.",
+    description: "Oberoende arkiv för offentliga nationella prov med proveniens. Lärinsikt AB.",
     url: "https://npprov.se/om"
+  }} />
+  <StructuredData type="Organization" data={{
+    name: "npprov.se",
+    url: "https://npprov.se",
+    description: "Oberoende arkiv för offentliga nationella prov med proveniens.",
+    sameAs: [
+      "https://larinsikt.se",
+      "https://npmonstret.se",
+      "https://npguide.se",
+      "https://xn--prvning-b1a.se",
+      "https://github.com/Larinsikt"
+    ]
   }} />
 </Layout>

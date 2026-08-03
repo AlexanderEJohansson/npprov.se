@@ -4,5 +4,17 @@
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "regions": ["arn1"]
+  "regions": ["arn1"],
+  "redirects": [
+    {
+      "source": "/about",
+      "destination": "/om",
+      "permanent": true
+    },
+    {
+      "source": "/about/:path*",
+      "destination": "/om",
+      "permanent": true
+    }
+  ]
 }
